@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grover's Algorithm — Quantum Professor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a12; --surface: #0a1525; --border: #1a3050;
+    --accent: #a78bfa; --accent-dim: #7c3aed; --gold: #f0c040;
+    --green: #39e07a; --red: #ff5566;
+    --text: #c8dff0; --text-dim: #6a8aaa; --text-bright: #e8f4ff;
+    --mono: 'Space Mono', monospace; --serif: 'Crimson Pro', Georgia, serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background:var(--bg); color:var(--text); font-family:var(--serif); font-size:18px; line-height:1.7; min-height:100vh; overflow-x:hidden; display:flex; flex-direction:column; align-items:center; }
+
+  .bg-grid { position:fixed; inset:0; z-index:0; background-image:linear-gradient(rgba(167,139,250,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(167,139,250,.025) 1px,transparent 1px); background-size:60px 60px; pointer-events:none; }
+  .bg-glow { position:fixed; z-index:0; pointer-events:none; border-radius:50%; filter:blur(130px); }
+  .bg-glow-1 { width:700px; height:700px; background:radial-gradient(circle,rgba(100,50,200,.13),transparent 70%); top:-250px; left:-250px; }
+  .bg-glow-2 { width:500px; height:500px; background:radial-gradient(circle,rgba(167,139,250,.07),transparent 70%); bottom:0; right:-150px; animation:bgPulse 9s ease-in-out infinite alternate; }
+  @keyframes bgPulse { from{opacity:.5}to{opacity:1} }
+
+  /* TOP BAR */
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(5,10,18,.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); padding:11px 28px; display:flex; align-items:center; gap:16px; }
+  .home-btn { font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; padding:4px 10px; border:1px solid var(--border); border-radius:2px; white-space:nowrap; transition:all .15s; flex-shrink:0; }
+  .home-btn:hover { color:var(--accent); border-color:rgba(167,139,250,.35); }
+  .bar-label { font-family:var(--mono); font-size:10px; color:var(--accent); letter-spacing:.15em; text-transform:uppercase; white-space:nowrap; min-width:100px; }
+  .progress-track { flex:1; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .progress-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--accent-dim),var(--accent)); transition:width .5s cubic-bezier(.4,0,.2,1); box-shadow:0 0 8px var(--accent); }
+  .score-tag { font-family:var(--mono); font-size:10px; color:var(--gold); white-space:nowrap; min-width:55px; text-align:right; }
+
+  /* STAGE */
+  .stage { position:relative; z-index:1; width:100%; max-width:660px; padding:110px 24px 60px; min-height:100vh; display:flex; flex-direction:column; justify-content:center; }
+
+  /* CARD */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:36px 36px 28px; animation:cardIn .32s cubic-bezier(.4,0,.2,1); }
+  @keyframes cardIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  .card.out { animation:cardOut .22s cubic-bezier(.4,0,.2,1) forwards; }
+  @keyframes cardOut { to{opacity:0;transform:translateY(-14px)} }
+
+  /* CARD HEADER */
+  .card-header { display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+  .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .card-kind { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; }
+  .card-num { font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-left:auto; }
+
+  /* PREVIEW */
+  .preview-dot  { background:var(--accent); box-shadow:0 0 8px var(--accent); }
+  .preview-kind { color:var(--accent); }
+  .preview-body { font-family:var(--serif); font-size:1.08rem; font-style:italic; color:var(--text); line-height:1.75; margin-bottom:28px; }
+
+  /* QUESTION */
+  .question-dot  { background:var(--gold); box-shadow:0 0 8px var(--gold); }
+  .question-kind { color:var(--gold); }
+  .question-body { font-family:var(--serif); font-size:1.1rem; color:var(--text-bright); line-height:1.65; margin-bottom:22px; }
+
+  /* OPTIONS */
+  .options { display:flex; flex-direction:column; gap:9px; margin-bottom:6px; }
+  .option { display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border:1px solid var(--border); border-radius:4px; cursor:pointer; background:transparent; color:var(--text); font-family:var(--serif); font-size:.97rem; text-align:left; line-height:1.5; width:100%; transition:border-color .14s,background .14s,color .14s; }
+  .option:hover:not(:disabled) { border-color:rgba(167,139,250,.5); background:rgba(167,139,250,.05); color:var(--text-bright); }
+  .option:disabled { cursor:default; }
+  .opt-letter { font-family:var(--mono); font-size:10px; color:var(--text-dim); border:1px solid var(--border); border-radius:2px; padding:2px 7px; flex-shrink:0; margin-top:2px; transition:all .14s; }
+  .option:hover:not(:disabled) .opt-letter { border-color:var(--accent); color:var(--accent); }
+  .option.opt-correct { border-color:var(--green); background:rgba(57,224,122,.09); color:var(--text-bright); }
+  .option.opt-correct .opt-letter { border-color:var(--green); color:var(--green); background:rgba(57,224,122,.15); }
+  .option.opt-wrong { border-color:var(--red); background:rgba(255,85,102,.09); color:var(--text-bright); }
+  .option.opt-wrong .opt-letter { border-color:var(--red); color:var(--red); background:rgba(255,85,102,.15); }
+  .option.opt-reveal { border-color:rgba(57,224,122,.4); background:rgba(57,224,122,.04); }
+  .option.opt-reveal .opt-letter { border-color:var(--green); color:var(--green); }
+
+  /* RESULT */
+  .result-dot-correct { background:var(--green); box-shadow:0 0 8px var(--green); }
+  .result-dot-wrong   { background:var(--red);   box-shadow:0 0 8px var(--red); }
+  .result-kind-correct{ color:var(--green); }
+  .result-kind-wrong  { color:var(--red); }
+  .chosen-row { display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border-radius:4px; border:1px solid; margin-bottom:12px; font-family:var(--serif); font-size:.97rem; line-height:1.5; }
+  .chosen-row.correct { border-color:var(--green); background:rgba(57,224,122,.08); color:var(--text-bright); }
+  .chosen-row.wrong   { border-color:var(--red);   background:rgba(255,85,102,.08); color:var(--text-bright); }
+  .chosen-row.reveal  { border-color:rgba(57,224,122,.4); background:rgba(57,224,122,.05); color:var(--text-bright); }
+  .row-icon { flex-shrink:0; font-size:.95rem; margin-top:1px; }
+  .exp-wrap { margin-top:18px; padding-top:18px; border-top:1px solid var(--border); }
+  .exp-label { font-family:var(--mono); font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .exp-label::before { content:'⊕'; }
+  .exp-text { font-size:.93rem; color:var(--text); font-style:italic; line-height:1.65; }
+
+  /* BUTTON */
+  .btn-row { display:flex; justify-content:flex-end; margin-top:26px; }
+  .btn { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:11px 24px; border:1px solid var(--accent); background:transparent; color:var(--accent); border-radius:3px; cursor:pointer; transition:all .18s; display:flex; align-items:center; gap:8px; }
+  .btn:hover { background:var(--accent); color:var(--bg); box-shadow:0 0 20px rgba(167,139,250,.35); }
+  .btn .arr { transition:transform .18s; }
+  .btn:hover .arr { transform:translateX(4px); }
+
+  /* INTRO */
+  .intro { text-align:center; animation:cardIn .35s ease; }
+  .intro-tag { font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); margin-bottom:20px; display:flex; align-items:center; justify-content:center; gap:12px; }
+  .intro-tag::before,.intro-tag::after { content:''; display:block; width:28px; height:1px; background:var(--accent); }
+  .intro h1 { font-family:var(--serif); font-weight:300; font-size:clamp(1.9rem,5vw,3rem); color:var(--text-bright); line-height:1.2; margin-bottom:14px; letter-spacing:-.01em; }
+  .intro h1 em { color:var(--accent); font-style:normal; font-weight:600; }
+  .intro p { font-size:.9rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:36px; line-height:1.7; max-width:420px; margin-left:auto; margin-right:auto; }
+
+  /* SUMMARY */
+  .summary { text-align:center; animation:cardIn .4s ease; }
+  .sum-tag { font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); margin-bottom:20px; }
+  .sum-score { font-family:var(--serif); font-weight:300; font-size:clamp(3.5rem,12vw,5.5rem); color:var(--text-bright); line-height:1; margin-bottom:6px; }
+  .sum-score span { color:var(--accent); }
+  .sum-pct { font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-bottom:28px; }
+  .sum-msg { font-size:1.03rem; font-style:italic; color:var(--text); line-height:1.7; max-width:440px; margin:0 auto 36px; }
+  .sum-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-reset { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:12px 28px; border:1px solid var(--accent); background:transparent; color:var(--accent); border-radius:3px; cursor:pointer; transition:all .2s; }
+  .btn-reset:hover { background:var(--accent); color:var(--bg); box-shadow:0 0 20px rgba(167,139,250,.35); }
+  .btn-home { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:12px 28px; border:1px solid var(--border); background:transparent; color:var(--text-dim); border-radius:3px; cursor:pointer; transition:all .2s; text-decoration:none; display:inline-block; }
+  .btn-home:hover { border-color:var(--text-dim); color:var(--text); }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="topbar">
+  <a class="home-btn" href="index.html">← Home</a>
+  <div class="bar-label" id="bar-label">Grover's Algorithm</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  <div class="score-tag" id="score-tag">0 / 50</div>
+</div>
+
+<div class="stage"><div id="slot"></div></div>
+
+<script>
+const L = ['A','B','C','D'];
+const data = [
+  {p:"We must first establish a consistent mathematical notation for quantum states. In quantum mechanics, specific symbols represent vectors.",q:"What does a \"ket\" symbol represent in our notation?",o:["A scalar value","A column vector","A row vector","An imaginary number"],a:1,e:"A ket is a column vector, meaning it has many rows but only one column."},
+  {p:"The ket has a mathematical counterpart used alongside it. This counterpart is called a \"bra\".",q:"What does a \"bra\" vector represent?",o:["A column vector","A scalar","A row vector","An identity matrix"],a:2,e:"A bra is a row vector, which has many columns but only one row."},
+  {p:"Converting a ket to a bra requires a specific operation, denoted by the dagger symbol.",q:"What mathematical operation does the dagger symbol represent?",o:["Matrix inversion","Conjugate transpose","Modulo 2 addition","Inner product"],a:1,e:"The dagger symbol denotes the conjugate transpose, which means you flip the vector on its side and take the conjugate of any imaginary numbers."},
+  {p:"When dealing with quantum circuits, the arrangement of bits matters. In this lecture, we use \"little endian\" notation.",q:"In little endian notation, where is the least significant bit located in a circuit diagram?",o:["At the top","At the bottom","In the middle","On the right"],a:0,e:"In little endian notation, the least significant bit is located at the top of the circuit."},
+  {p:"Classical logic gates have mathematical analogs in quantum circuits. One such operation is the exclusive OR (XOR).",q:"If you evaluate \"1 XOR a\" where \"a\" is a single qubit, what mathematical operation is this equivalent to?",o:["Scalar division","Complex multiplication","Modulo 2 addition","Standard subtraction"],a:2,e:"Applying 1 XOR a is equivalent to modulo 2 addition, where you add the bits and divide by two to find the remainder."},
+  {p:"To express quantum states, we distinguish between the number of qubits and the total combinations they can form.",q:"If lowercase n represents the number of qubits, what does uppercase N represent?",o:["The total number of possible options those qubits can make","The number of quantum gates","The algorithm's runtime","The diffusion operator"],a:0,e:"While little n is the number of bits, big N is the number of possible options those bits can represent."},
+  {p:"A foundational quantum technique involves manipulating the phase of a system using a controlled operation.",q:"What is the name of the technique that uses a controlled operation to move a phase from one qubit to another?",o:["Quantum entanglement","Phase kickback","State inversion","Amplitude amplification"],a:1,e:"Phase kickback is a quantum mechanical technique that kicks back the phase of a target qubit to a control qubit using operations like a CNOT gate."},
+  {p:"In phase kickback, an operation connects a control qubit and a target qubit.",q:"During phase kickback, which qubit's phase is modified relative to the other?",o:["The target qubit changes","The control qubit changes","Both change identically","Neither changes"],a:1,e:"The phase is transferred from the target qubit to the control qubit, meaning the control qubit changes while the target goes along for the ride."},
+  {p:"A qubit possesses a value and a phase, but they behave differently upon observation.",q:"Which of the following statements is true regarding a qubit's phase?",o:["It always reads as 1 upon measurement","It is an easily measured classical component","It does not show up in measurement but can be used behind the scenes","It destroys the state vector when viewed"],a:2,e:"Phase is a non-classical component that does not show up in measurement, allowing us to do things behind the scenes in a quantum mechanical fashion."},
+  {p:"We evaluate search criteria using a specific conceptual machine.",q:"In quantum algorithms, what is an \"oracle\"?",o:["A program predicting future probabilities","A machine learning agent","A black box function that makes a decision and outputs true or false","A classical database sorter"],a:2,e:"An oracle is a black box machine that calculates a decision about an input, outputting a simple true (1) or false (0), and does not predict the future."},
+  {p:"The oracle needs a way to mark the correct answers without altering the measured value of the data.",q:"How does the oracle securely store the \"true or false\" information?",o:["In the phase of the qubit","In the magnitude of the qubit","By writing it to a classical register","By applying an identity matrix"],a:0,e:"Phase kickback allows the oracle to store the success or failure information directly in the phase without affecting the value."},
+  {p:"Because a correct answer flips the phase, we use mathematical notation to denote the oracle's operation.",q:"How is the phase kickback applied based on the function's output f(a)?",o:["(−1)^f(a)","(0)^f(a)","(1)^(−f(a))","N^f(a)"],a:0,e:"We use the compact notation (−1)^f(a), meaning if the function outputs 1 (true), the phase becomes negative 1."},
+  {p:"The problem Grover's algorithm solves requires understanding how data is structured.",q:"What defines an \"unsorted search\" problem?",o:["Data organized in a binary tree","Data where there is no structure or organization","Data structured numerically","Data perfectly alphabetized"],a:1,e:"An unsorted search means there is no structure to the data; it is a random pile."},
+  {p:"Classical computers struggle with unsorted data because they lack shortcuts.",q:"How must a classical computer process an unsorted search?",o:["Binary search","Guess and check linearly, checking every object","Quantum superpositions","Hash mapping"],a:1,e:"Without structure, classical computers must use a linear search, performing a guess-and-check method where they open every item."},
+  {p:"The classical approach to unsorted data is highly inefficient as datasets grow.",q:"How does classical unsorted search scale mathematically with N items?",o:["Quadratically","Exponentially","Logarithmically","Linearly"],a:3,e:"A classical unsorted search scales linearly, requiring N (or N−1) checks in the worst case."},
+  {p:"Grover's algorithm fundamentally improves the search process compared to classical linear scaling.",q:"What kind of mathematical advantage does Grover's algorithm provide?",o:["Exponential advantage","No advantage","Quadratic advantage","Polynomial decay"],a:2,e:"Grover's algorithm provides a quadratic speedup over classical algorithms."},
+  {p:"A common misconception about quantum computers is how they evaluate massive datasets.",q:"How does a quantum computer actually approach the search space?",o:["It explores all options at the exact same time","It probabilistically manipulates all options to make the true answer most likely","It creates infinite classical clones","It relies on Schrödinger's cat being simultaneously alive and dead"],a:1,e:"Quantum computing does not explore all options at once; instead, it uses properties like interference to manipulate probabilities so the most likely result is the true answer."},
+  {p:"To properly evaluate the probabilities, the algorithm must initialize the bits in a specific way.",q:"What is the first state of the register before querying the oracle?",o:["All qubits set to |1⟩","Equal superposition, giving every option an equal chance","Completely entangled with an external ancilla","Initialized randomly"],a:1,e:"The algorithm starts by putting all qubits in an equal superposition, meaning every answer has an equal chance to be the guess."},
+  {p:"We conceptually visualize Grover's algorithm using probabilities.",q:"After equal superposition is achieved, what does the oracle visually do to the correct answer's amplitude?",o:["Triples its height","Sets its height to zero","Flips its phase, turning the amplitude upside down","Averages it with the bad strings"],a:2,e:"The oracle marks the correct answer by storing the information in the phase, conceptually turning its amplitude upside down (negative)."},
+  {p:"Once the oracle flips the correct answer's phase, a mathematical operator is applied to the entire register.",q:"What arithmetic operation follows the phase flip in the visualization?",o:["Squaring all values","Computing the mean of the amplitudes and doing an inversion about that mean","Adding all values to N","Applying the identity matrix"],a:1,e:"The algorithm computes the average (mean) of all amplitudes and executes an arithmetic step representing an inversion about the mean."},
+  {p:"The inversion about the mean relies on a very specific arithmetic formula to manipulate the amplitudes.",q:"What formula represents the inversion about the mean for a given amplitude?",o:["Amplitude − Mean","2 × Mean − Amplitude","Mean × 2","Amplitude²"],a:1,e:"The math executed for this step is represented by the formula 2 × Average − Amplitude."},
+  {p:"This inversion mathematically benefits the right answer because its phase was flipped by the oracle.",q:"Why does the correct answer's probability increase during inversion?",o:["Because the negative amplitude reflects high above the mean, while the others decrease","Because the oracle adds magnitude directly","Because the bad strings are deleted","Because the classical search requires it"],a:0,e:"Because the oracle marks the right answer by making it negative, reflecting it across the overall positive mean makes its probability much higher than the others."},
+  {p:"Because the probability improves slightly with each cycle, the quantum search is uniquely powerful.",q:"How does a failed guess in Grover's algorithm compare to a failed guess in classical unsorted search?",o:["Neither algorithm benefits from a failed guess","In Grover's, each previous iteration improves the probability of the next one","Classical unsorted search uses failed guesses to double the speed","They operate exactly the same"],a:1,e:"Unlike classical search, in Grover's algorithm each iteration improves the next one, steadily increasing the probability of measuring the correct result."},
+  {p:"Because each iteration improves the probability, it is tempting to run the algorithm endlessly.",q:"Should we apply the Grover iteration as many times as infinitely possible?",o:["Yes, infinite iterations guarantee a 100% success rate","No, if you apply it too many times you overshoot and get garbage results","Yes, provided the system is perfectly cooled","No, because the database will eventually empty out"],a:1,e:"You cannot apply it endlessly; if you apply it too many times you overshoot the optimal probability and get garbage."},
+  {p:"Formally, Grover's algorithm consists of three primary steps.",q:"What is the very first step in the algorithm?",o:["Applying the oracle matrix","Measuring the qubits","Taking an n-qubit register initialized to zero and applying Hadamard gates to create equal superposition","Computing the inversion about the mean"],a:2,e:"The first formal step is to take an n-qubit register starting at zero and put them in an equal superposition using Hadamard gates."},
+  {p:"To properly perform phase kickback, an additional target qubit is often initialized differently.",q:"Why is the separate target register initialized to |1⟩ before applying its Hadamard gate?",o:["To prevent the circuit from shorting out","Because phase kickback requires a state that has a different phase relative to the other register","Because the oracle only accepts 1s","It acts as a measurement buffer"],a:1,e:"It is initialized to 1 because when put into superposition, it will have a negative phase that is different than the blue register, which is strictly required for phase kickback."},
+  {p:"The second step is applying the Grover unitary matrix, G, which consists of multiple operators.",q:"Which four operators make up the Grover unitary matrix G?",o:["H, Z₀, H, Zf","X, Y, Z, I","CNOT, X, H, Z","Z₀, Zf, X, U"],a:0,e:"The complete Grover operator G is composed of the sequence H, Z₀, H, and Zf."},
+  {p:"Let us analyze the operators inside G. The Zf operator contains the core logic.",q:"What is the exact purpose of Zf?",o:["It negates the all-zero state","It encodes the oracle function f, deciding which strings are good and applying phase kickback","It applies a Hadamard transform","It acts as the diffusion operator"],a:1,e:"Zf encodes the oracle function, deciding which answers are good or bad and applying a phase kickback to mark them."},
+  {p:"The Z₀ operator is much simpler than Zf and does not require complex logic.",q:"What does Z₀ do?",o:["It deletes the all-zero state","It negates the phase if and only if the input string is all zeros","It sets all qubits to zero","It applies an exclusive OR operation"],a:1,e:"The Z₀ operator simply negates the phase if and only if the input string is all zeros."},
+  {p:"The components −HZ₀H act together to execute the averaging arithmetic we visualized earlier.",q:"What is the formal name for the operator represented by −HZ₀H?",o:["The Oracle Operator","The Phase Operator","The Diffusion Operator","The Matrix Identity"],a:2,e:"This combination of operators is formally called the diffusion operator."},
+  {p:"To deeply understand the algorithm, we must mathematically define the set of \"good\" strings, Set A.",q:"How is Set A defined mathematically?",o:["All strings that start with zero","All strings x such that the function f(x) returns a 1 (true)","All strings that evaluate to zero","All strings that equal big N"],a:1,e:"Set A is defined as the set of strings such that when placed into f(x), we get a true result of 1."},
+  {p:"Correspondingly, Set B contains all the \"bad\" strings.",q:"How is Set B defined?",o:["Strings where f(x) returns 0 (false)","Strings where f(x) returns 1","Strings that the oracle cannot process","It is an empty set"],a:0,e:"Set B is exactly the same as A, except it gives a function value of 0, meaning it contains the bad answers."},
+  {p:"An important mathematical characteristic defines the relationship between the good Set A and the bad Set B.",q:"What is the mathematical relationship between the two sets?",o:["They are identical","They overlap completely","They are disjoint (orthogonal), sharing no elements","Set A is a subset of Set B"],a:2,e:"The two sets are orthogonal or disjoint; there is no overlap in the Venn diagram because an answer cannot be simultaneously true and false."},
+  {p:"We use little a for the number of good strings and little b for the bad strings.",q:"What does the sum of a and b mathematically equal?",o:["The number of qubits (n)","The total number of options (N)","1","The target probability"],a:1,e:"Little a plus little b equals big N, the total number of options in the system."},
+  {p:"Since we require vectors, we convert Sets A and B into normalized state vectors |A⟩ and |B⟩.",q:"If we have probability amplitudes α and β for these sets, what must their squares sum to?",o:["N","0","1 (or 100%)","a × b"],a:2,e:"α² + β² equals 1, meaning that the sum of the probabilities of all good and bad solutions must equal 100% of the total probability space."},
+  {p:"At the algorithm's start, the state |S⟩ is an equal superposition of all items.",q:"How is the state |S⟩ written in terms of the normalized vectors |A⟩ and |B⟩?",o:["|S⟩ = |A⟩ + |B⟩","|S⟩ = √(a/N)|A⟩ + √(b/N)|B⟩","|S⟩ = |A⟩ − |B⟩","|S⟩ = (a/N)|A⟩ × (b/N)|B⟩"],a:1,e:"The equal superposition is expressed as √(a/N)|A⟩ + √(b/N)|B⟩, representing an equal chance of selecting any string."},
+  {p:"We must apply the matrix G to the overall state |S⟩. Quantum operations follow specific mathematical properties.",q:"How does linearity affect the application of G to state |S⟩?",o:["We must divide G by N","It allows us to apply G separately to vector |A⟩ and vector |B⟩","It forces G to equal the identity matrix","We ignore vector |B⟩ entirely"],a:1,e:"Because of linearity, the operator distributes, allowing us to evaluate G applied to vector |A⟩ and vector |B⟩ separately."},
+  {p:"To algebraically distribute G, we can rewrite the diffusion operator to make it cleaner using an outer product trick.",q:"What convenient form can −HZ₀H be rewritten into using the superposition |S⟩?",o:["2|S⟩⟨S| − I  (where I is the identity)","H ⊗ H","|A⟩⟨B|","(−1)^f(x)"],a:0,e:"We rewrite the cluttered diffusion operator as the cleaner outer product form 2|S⟩⟨S| − I."},
+  {p:"As we distribute G to |A⟩, we must consider how the oracle portion Zf interacts with a good string.",q:"What mathematical effect occurs when Zf is applied to the good state |A⟩?",o:["It evaluates to zero","It triggers phase kickback, applying a negative phase (−1) because (−1)¹ = −1","It turns |A⟩ into |B⟩","It ignores the state entirely"],a:1,e:"Because |A⟩ contains good strings, f(x) returns a 1, triggering phase kickback and producing a negative phase via (−1)¹."},
+  {p:"After grinding through the algebra, we want to represent G as a simple 2×2 matrix.",q:"To correctly format this matrix, what rule must we follow with our basis vectors?",o:["Discard the negative vectors","Label the rows and columns in the exact same order (e.g., B then A)","Sort them alphabetically","Only use positive integers"],a:1,e:"When creating the matrix, we must label the rows and columns in the same order to track how the state vectors transform."},
+  {p:"We deliberately organize the basis vectors as (Bad, Good), or (B, A), rather than alphabetically.",q:"Why do we arrange the 2×2 matrix of G in this specific non-alphabetical order?",o:["Because it creates a null matrix","Because it perfectly mirrors a famous Euclidean rotation matrix","To confuse the compiler","To bypass the oracle"],a:1,e:"We write it backwards because it forms a recognizable Euclidean rotation matrix, making it mathematically convenient."},
+  {p:"By comparing our G matrix to a classical Euclidean rotation matrix, we find a direct substitution.",q:"Based on the components of our matrix, what value matches sin(θ)?",o:["π/2","−1","√(a/N)","2θ"],a:2,e:"By reading off the matrix components, we find that sin(θ) = √(a/N)."},
+  {p:"With G behaving as a rotation matrix, running the algorithm physically rotates the probability state.",q:"How much rotation does a single application of the full Grover operator correspond to?",o:["One rotation of θ","Two rotations of θ (2θ)","90 degrees","N rotations"],a:1,e:"Every application of the Grover operator G results in two rotations of θ (2θ)."},
+  {p:"We can geometrically visualize this rotation on a standard 2D plane with x and y axes.",q:"In this geometric visualization, what do the x-axis and y-axis represent?",o:["x-axis is good strings, y-axis is bad strings","x-axis is magnitude, y-axis is phase","x-axis corresponds to the bad strings, y-axis corresponds to the good strings","x-axis is real, y-axis is imaginary"],a:2,e:"The horizontal x-axis corresponds to the bad strings, and the vertical y-axis corresponds to the good strings."},
+  {p:"Our initial state points into the first quadrant, and the iteration acts as a set of reflections.",q:"Physically, what does one full iteration of G look like geometrically?",o:["A complete 360 degree loop","A flattening directly onto the x-axis","A reflection across the x-axis followed by a rotation back, moving the vector closer to the y-axis","A continuous spin that never stops"],a:2,e:"The oracle reflects the vector across the x-axis, and the diffusion operator rotates it back positive, moving it closer to the good y-axis."},
+  {p:"After applying G for k iterations, the total accumulated angle becomes (2k+1)θ.",q:"To maximize our chance of success, what value should this angle approach?",o:["2π radians","0 radians","π/2 radians (90 degrees)","π radians"],a:2,e:"To maximize the probability of measuring a good string, we want the angle to approach π/2 radians, aligning it with the y-axis."},
+  {p:"Knowing our target is (2k+1)θ ≈ π/2, we can isolate k to find the required iterations.",q:"What is the isolated algebraic equation for the number of iterations k?",o:["k = (π/2) / θ","k = π/(4θ) − 1/2","k = 2θ + 1","k = θ − π"],a:1,e:"By isolating k algebraically, we get the expression k ≈ π/(4θ) − 1/2."},
+  {p:"To finalize the solution for k, we must substitute θ, which requires a physics small-angle approximation.",q:"If N is extremely large, meaning θ is very small, what can we approximate sin(θ) as?",o:["1","0","π","θ"],a:3,e:"When N is large, the argument is small enough that we can approximate sin(θ) ≈ θ."},
+  {p:"We substitute our approximation θ ≈ √(a/N) back into the equation for k to determine algorithmic complexity.",q:"What is the Big O notation scaling for Grover's algorithm?",o:["O(√N)","O(N)","O(log N)","O(N²)"],a:0,e:"Plugging in θ, we find that the algorithm scales as O(√N), providing a massive improvement over classical linear searches."},
+  {p:"We have reached the final conclusion of our mathematical derivation.",q:"Why is this O(√N) result considered a massive achievement for quantum computing?",o:["It proves quantum algorithms are infinitely faster","It demonstrates a quadratic speedup over the classical unsorted search requirement of O(N)","It makes sorting data obsolete forever","It guarantees the answer on the first guess"],a:1,e:"The lower bound calculation proves that a quantum computer can search unsorted data scaling at O(√N), significantly better than the classical linear search."}
+];
+
+let qi=0, step='intro', score=0, answered=0;
+const slot=document.getElementById('slot'), fill=document.getElementById('prog-fill'), barLbl=document.getElementById('bar-label'), scorEl=document.getElementById('score-tag');
+
+function updateBar(){
+  fill.style.width=(answered/50*100)+'%';
+  scorEl.textContent=score+' / 50';
+  barLbl.textContent=step==='intro'?"Grover's Algorithm":step==='summary'?'Complete':`Q${qi+1} of 50`;
+}
+
+function swap(fn){
+  const cur=slot.firstChild;
+  if(cur){cur.classList.add('out');setTimeout(()=>{slot.innerHTML='';fn();},220);}
+  else fn();
+}
+
+function showIntro(){
+  step='intro';updateBar();
+  const d=document.createElement('div');d.className='intro';
+  d.innerHTML=`<div class="intro-tag">Module 02 · 50 Questions</div><h1>Grover's Algorithm &amp;<br><em>Quantum Search</em></h1><p>From bra-ket notation to O(√N) complexity. Each preview sets the scene — then choose your answer and read the explanation.</p><div class="btn-row" style="justify-content:center"><button class="btn" onclick="startQuiz()">Begin <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function startQuiz(){qi=0;score=0;answered=0;swap(()=>showPreview());}
+
+function showPreview(){
+  step='preview';updateBar();
+  const d=document.createElement('div');d.className='card';
+  d.innerHTML=`<div class="card-header"><span class="dot preview-dot"></span><span class="card-kind preview-kind">Preview</span><span class="card-num">Q${qi+1} of 50</span></div><div class="preview-body">${data[qi].p}</div><div class="btn-row"><button class="btn" onclick="swap(showQuestion)">Question <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function showQuestion(){
+  step='question';updateBar();
+  const item=data[qi];
+  const d=document.createElement('div');d.className='card';
+  const optHtml=item.o.map((o,oi)=>`<button class="option" id="opt${oi}" onclick="pick(${oi})"><span class="opt-letter">${L[oi]}</span><span>${o}</span></button>`).join('');
+  d.innerHTML=`<div class="card-header"><span class="dot question-dot"></span><span class="card-kind question-kind">Question ${qi+1} of 50</span></div><div class="question-body">${item.q}</div><div class="options">${optHtml}</div>`;
+  slot.appendChild(d);
+}
+
+function pick(oi){
+  const item=data[qi];
+  document.querySelectorAll('.option').forEach(b=>b.disabled=true);
+  const correct=item.a;
+  document.querySelectorAll('.option')[correct].classList.add(oi===correct?'opt-correct':'opt-reveal');
+  if(oi!==correct) document.querySelectorAll('.option')[oi].classList.add('opt-wrong');
+  setTimeout(()=>swap(()=>showResult(oi)),480);
+}
+
+function showResult(oi){
+  const item=data[qi];const ok=oi===item.a;
+  if(ok)score++;answered++;step='result';updateBar();
+  const d=document.createElement('div');d.className='card';
+  const dotCls=ok?'result-dot-correct':'result-dot-wrong';
+  const kindCls=ok?'result-kind-correct':'result-kind-wrong';
+  let rowsHtml=`<div class="chosen-row ${ok?'correct':'wrong'}"><span class="row-icon">${ok?'✓':'✗'}</span><span>${item.o[oi]}</span></div>`;
+  if(!ok) rowsHtml+=`<div class="chosen-row reveal"><span class="row-icon">✓</span><span><strong>Correct:</strong> ${item.o[item.a]}</span></div>`;
+  const isLast=qi===49;
+  d.innerHTML=`<div class="card-header"><span class="dot ${dotCls}"></span><span class="card-kind ${kindCls}">${ok?'Correct!':'Incorrect'}</span><span class="card-num">Q${qi+1} of 50</span></div>${rowsHtml}<div class="exp-wrap"><div class="exp-label">Explanation</div><div class="exp-text">${item.e}</div></div><div class="btn-row"><button class="btn" onclick="advance()">${isLast?'See Results':'Next'} <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function advance(){
+  if(qi===49){swap(showSummary);return;}
+  qi++;swap(showPreview);
+}
+
+function showSummary(){
+  step='summary';updateBar();
+  const pct=Math.round(score/50*100);
+  const msgs=[[80,"Outstanding. You have mastered Grover's algorithm from bra-ket notation all the way to O(√N) complexity."],[60,"Excellent work. The core mechanics of amplitude amplification and geometric rotation are clear to you."],[40,"Good progress. Revisit the diffusion operator, the rotation matrix derivation, and the small-angle approximation."],[20,"A solid start. Run through the chain again — the logical connections between phase kickback, inversion, and geometry will click."],[-1,"Quantum search is deep. Return to the fundamentals and try again — each pass reveals more structure."]];
+  const msg=msgs.find(([t])=>pct>t)[1];
+  const d=document.createElement('div');d.className='summary';
+  d.innerHTML=`<div class="sum-tag">Module 02 Complete · Grover's Algorithm</div><div class="sum-score">${score}<span>/50</span></div><div class="sum-pct">${pct}% correct</div><div class="sum-msg">${msg}</div><div class="sum-btns"><a class="btn-home" href="index.html">← All Modules</a><button class="btn-reset" onclick="swap(showIntro)">↺ Retake</button></div>`;
+  slot.appendChild(d);
+}
+
+showIntro();
+</script>
+</body>
+</html>
