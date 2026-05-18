@@ -93,6 +93,7 @@
   .pill-violet{color:var(--violet);border-color:rgba(167,139,250,.25);background:rgba(167,139,250,.06)}
   .pill-green{color:var(--green);border-color:rgba(57,224,122,.25);background:rgba(57,224,122,.06)}
   .pill-amber{color:var(--amber);border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.06)}
+  .pill-red{color:#fb7185;border-color:rgba(251,113,133,.25);background:rgba(251,113,133,.06)}
 
   .mod-arrow{font-family:var(--mono);font-size:14px;color:var(--text-dim);transition:color .2s,transform .2s}
   .module:hover .mod-arrow{transform:translateX(4px)}
@@ -137,15 +138,15 @@
     <p class="hero-sub">// Guided quiz sequences that build from first principles to advanced mathematics. Each module is designed for 2–3 passes to achieve full mastery.</p>
     <div class="stats">
       <div class="stat">
-        <div class="stat-val">4<span></span></div>
+        <div class="stat-val">5<span></span></div>
         <div class="stat-lbl">Modules available</div>
       </div>
       <div class="stat">
-        <div class="stat-val">200<span></span></div>
+        <div class="stat-val">250<span></span></div>
         <div class="stat-lbl">Total questions</div>
       </div>
       <div class="stat">
-        <div class="stat-val">10+<span>+</span></div>
+        <div class="stat-val">10<span>+</span></div>
         <div class="stat-lbl">Concepts covered</div>
       </div>
     </div>
@@ -187,6 +188,35 @@
         <span class="mod-arrow">→</span>
       </div>
     </a>
+    <!-- GROVER TEXTBOOK -->
+<a class="module mod-violet" href="grovers_textbook.html">
+  <div class="mod-num">Module 02B</div>
+  <div class="mod-icon">📘</div>
+  <div class="mod-progress">
+    <div class="mod-fill" style="width:0%"></div>
+  </div>
+
+  <div class="mod-title">
+    Grover's Algorithm — Textbook Lesson
+  </div>
+
+  <div class="mod-desc">
+    Structured revision notes covering phase kickback,
+    oracle construction, amplitude amplification,
+    diffusion operator, geometric interpretation,
+    and O(√N) derivation.
+  </div>
+
+  <div class="mod-meta">
+    <div class="mod-pills">
+      <span class="pill pill-violet">Revision</span>
+      <span class="pill pill-violet">Textbook</span>
+      <span class="pill pill-violet">Theory</span>
+    </div>
+
+    <span class="mod-arrow">→</span>
+  </div>
+</a>
 
     <!-- VQA 1-->
     <a class="module mod-green" href="vqa_foundations.html">
@@ -203,13 +233,13 @@
         <span class="mod-arrow">→</span>
       </div>
     </a>
-    <!-- VQA 2-->
-    <a class="module mod-green" href="vqa_applications.html">
+    <!-- Adv VQA 1 -->
+     <a class="module mod-green" href="advanced_vqa_part_1.html">
       <div class="mod-num">Module 04</div>
       <div class="mod-icon">⚡</div>
       <div class="mod-progress"><div class="mod-fill" style="width:0%"></div></div>
       <div class="mod-title">Variational Quantum Algorithms &amp; Quantum Optimization</div>
-      <div class="mod-desc">From VQE and QAOA foundations to the Unit Commitment Problem. Covers MILP, QUBO, Ising mapping, penalty factors, and hardware benchmarking.</div>
+      <div class="mod-desc">Introduction to advanced variational quantum algorithms and their applications in quantum optimization.</div>
       <div class="mod-meta">
         <div class="mod-pills">
           <span class="pill pill-green">50 questions</span>
@@ -218,11 +248,26 @@
         <span class="mod-arrow">→</span>
       </div>
     </a>
+    <!-- VQA 2-->
+    <a class="module mod-green" href="vqa_applications.html">
+      <div class="mod-num">Module 05</div>
+      <div class="mod-icon">⚡</div>
+      <div class="mod-progress"><div class="mod-fill" style="width:0%"></div></div>
+      <div class="mod-title">Variational Quantum Algorithms &amp; Quantum Optimization</div>
+      <div class="mod-desc">From VQE and QAOA foundations to the Unit Commitment Problem. Covers MILP, QUBO, Ising mapping, penalty factors, and hardware benchmarking.</div>
+      <div class="mod-meta">
+        <div class="mod-pills">
+          <span class="pill pill-red">50 questions</span>
+          <span class="pill pill-red">Qubits . VQA . Ansatz</span>
+        </div>
+        <span class="mod-arrow">→</span>
+      </div>
+    </a>
 
     <!-- PLACEHOLDER 4 -->
     <div class="module mod-amber mod-soon">
       <span class="soon-badge">Coming Soon</span>
-      <div class="mod-num">Module 04</div>
+      <div class="mod-num">Module 06</div>
       <div class="mod-icon">⚛</div>
       <div class="mod-progress"><div class="mod-fill" style="width:0%"></div></div>
       <div class="mod-title">Quantum Error Correction</div>
