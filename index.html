@@ -72,6 +72,14 @@
   .mod-amber:hover{border-color:rgba(251,191,36,.5);box-shadow:0 12px 40px rgba(251,191,36,.1)}
   .mod-amber::before{background:linear-gradient(135deg,rgba(251,191,36,.04),transparent)}
 
+  .mod-red{border-color:rgba(251,113,133,.2)}
+  .mod-red:hover{border-color:rgba(251,113,133,.5);box-shadow:0 12px 40px rgba(251,113,133,.1)}
+  .mod-red::before{background:linear-gradient(135deg,rgba(251,113,133,.04),transparent)}
+
+  .mod-yellow{border-color:rgba(234,179,8,.2)}
+  .mod-yellow:hover{border-color:rgba(234,179,8,.5);box-shadow:0 12px 40px rgba(234,179,8,.1)}
+  .mod-yellow::before{background:linear-gradient(135deg,rgba(234,179,8,.04),transparent)}
+
   /* coming-soon overlay */
   .mod-soon{opacity:.45;pointer-events:none;cursor:default}
   .soon-badge{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);border:1px solid var(--border);border-radius:2px;padding:2px 7px;position:absolute;top:18px;right:18px}
@@ -82,6 +90,7 @@
   .mod-green .mod-num{color:var(--green)}
   .mod-amber .mod-num{color:var(--amber)}
   .mod-red .mod-num{color:#fb7185}
+  .mod-yellow .mod-num{color:var(--yellow)}
 
   .mod-icon{font-size:2rem;margin-bottom:14px;line-height:1}
   .mod-title{font-family:var(--serif);font-size:1.35rem;font-weight:400;color:var(--text-bright);line-height:1.25;margin-bottom:10px}
@@ -95,6 +104,7 @@
   .pill-green{color:var(--green);border-color:rgba(57,224,122,.25);background:rgba(57,224,122,.06)}
   .pill-amber{color:var(--amber);border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.06)}
   .pill-red{color:#fb7185;border-color:rgba(251,113,133,.25);background:rgba(251,113,133,.06)}
+  .pill-yellow{color:var(--yellow);border-color:rgba(234,179,8,.25);background:rgba(234,179,8,.06)}
 
   .mod-arrow{font-family:var(--mono);font-size:14px;color:var(--text-dim);transition:color .2s,transform .2s}
   .module:hover .mod-arrow{transform:translateX(4px)}
@@ -111,6 +121,8 @@
   .mod-violet .mod-fill{background:linear-gradient(90deg,#7c3aed,var(--violet))}
   .mod-green .mod-fill{background:linear-gradient(90deg,#16a34a,var(--green))}
   .mod-amber .mod-fill{background:linear-gradient(90deg,#d97706,var(--amber))}
+  .mod-yellow .mod-fill{background:linear-gradient(90deg,#eab308,var(--yellow))}
+  .mod-red .mod-fill{background:linear-gradient(90deg,#f43f5e,var(--red))}
 
   /* HOW IT WORKS */
   .how{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:0}
@@ -221,7 +233,7 @@
 </a>
 
     <!-- VQA 1-->
-    <a class="module mod-green" href="vqa_foundations.html">
+    <a class="module mod-yellow" href="vqa_foundations.html">
       <div class="mod-num">Module 03</div>
       <div class="mod-icon">⚡</div>
       <div class="mod-progress"><div class="mod-fill" style="width:0%"></div></div>
@@ -244,14 +256,14 @@
       <div class="mod-desc">Introduction to advanced variational quantum algorithms and their applications in quantum optimization.</div>
       <div class="mod-meta">
         <div class="mod-pills">
-          <span class="pill pill-green">50 questions</span>
-          <span class="pill pill-green">VQA · QAOA · UCP</span>
+          <span class="pill pill-red">50 questions</span>
+          <span class="pill pill-red">VQA · QAOA · UCP</span>
         </div>
         <span class="mod-arrow">→</span>
       </div>
     </a>
     <!-- VQA 2-->
-    <a class="module mod-green" href="vqa_applications.html">
+    <a class="module mod-red" href="vqa_applications.html">
       <div class="mod-num">Module 05</div>
       <div class="mod-icon">⚡</div>
       <div class="mod-progress"><div class="mod-fill" style="width:0%"></div></div>
@@ -266,7 +278,7 @@
       </div>
     </a>
 
-    <!-- PLACEHOLDER 4 -->
+    <!-- PLACEHOLDER 7 -->
     <div class="module mod-amber mod-soon">
       <span class="soon-badge">Coming Soon</span>
       <div class="mod-num">Module 06</div>
