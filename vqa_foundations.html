@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VQE Foundations — Quantum Professor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050a12; --surface:#0a1525; --border:#1a3050;
+    --accent:#fbbf24; --accent-dim:#d97706; --gold:#fbbf24;
+    --green:#39e07a; --red:#ff5566;
+    --text:#c8dff0; --text-dim:#6a8aaa; --text-bright:#e8f4ff;
+    --mono:'Space Mono',monospace; --serif:'Crimson Pro',Georgia,serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:18px;line-height:1.7;min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center}
+
+  .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(251,191,36,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(251,191,36,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+  .bg-glow{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(130px)}
+  .bg-glow-1{width:700px;height:700px;background:radial-gradient(circle,rgba(180,120,10,.12),transparent 70%);top:-250px;left:-250px}
+  .bg-glow-2{width:500px;height:500px;background:radial-gradient(circle,rgba(251,191,36,.06),transparent 70%);bottom:0;right:-150px;animation:bgPulse 9s ease-in-out infinite alternate}
+  @keyframes bgPulse{from{opacity:.5}to{opacity:1}}
+
+  /* TOP BAR */
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,10,18,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:11px 28px;display:flex;align-items:center;gap:16px}
+  .home-btn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:2px;white-space:nowrap;transition:all .15s;flex-shrink:0}
+  .home-btn:hover{color:var(--accent);border-color:rgba(251,191,36,.4)}
+  .bar-label{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;min-width:100px}
+  .progress-track{flex:1;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px rgba(251,191,36,.5)}
+  .score-tag{font-family:var(--mono);font-size:10px;color:var(--accent);white-space:nowrap;min-width:55px;text-align:right}
+
+  /* STAGE */
+  .stage{position:relative;z-index:1;width:100%;max-width:660px;padding:110px 24px 60px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+
+  /* CARD */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:36px 36px 28px;animation:cardIn .32s cubic-bezier(.4,0,.2,1)}
+  @keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .card.out{animation:cardOut .22s cubic-bezier(.4,0,.2,1) forwards}
+  @keyframes cardOut{to{opacity:0;transform:translateY(-14px)}}
+
+  /* CARD HEADER */
+  .card-header{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .card-kind{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+  .card-num{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto}
+
+  /* PREVIEW */
+  .preview-dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .preview-kind{color:var(--accent)}
+  .section-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);opacity:.6;margin-bottom:10px}
+  .preview-body{font-family:var(--serif);font-size:1.08rem;font-style:italic;color:var(--text);line-height:1.75;margin-bottom:28px}
+
+  /* QUESTION */
+  .question-dot{background:#f0c040;box-shadow:0 0 8px #f0c040}
+  .question-kind{color:#f0c040}
+  .question-body{font-family:var(--serif);font-size:1.1rem;color:var(--text-bright);line-height:1.65;margin-bottom:22px}
+
+  /* OPTIONS */
+  .options{display:flex;flex-direction:column;gap:9px;margin-bottom:6px}
+  .option{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:transparent;color:var(--text);font-family:var(--serif);font-size:.97rem;text-align:left;line-height:1.5;width:100%;transition:border-color .14s,background .14s,color .14s}
+  .option:hover:not(:disabled){border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.05);color:var(--text-bright)}
+  .option:disabled{cursor:default}
+  .opt-letter{font-family:var(--mono);font-size:10px;color:var(--text-dim);border:1px solid var(--border);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:2px;transition:all .14s}
+  .option:hover:not(:disabled) .opt-letter{border-color:var(--accent);color:var(--accent)}
+  .option.opt-correct{border-color:var(--green);background:rgba(57,224,122,.09);color:var(--text-bright)}
+  .option.opt-correct .opt-letter{border-color:var(--green);color:var(--green);background:rgba(57,224,122,.15)}
+  .option.opt-wrong{border-color:var(--red);background:rgba(255,85,102,.09);color:var(--text-bright)}
+  .option.opt-wrong .opt-letter{border-color:var(--red);color:var(--red);background:rgba(255,85,102,.15)}
+  .option.opt-reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.04)}
+  .option.opt-reveal .opt-letter{border-color:var(--green);color:var(--green)}
+
+  /* RESULT */
+  .result-dot-correct{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .result-dot-wrong{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .result-kind-correct{color:var(--green)}
+  .result-kind-wrong{color:var(--red)}
+  .chosen-row{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:4px;border:1px solid;margin-bottom:12px;font-family:var(--serif);font-size:.97rem;line-height:1.5}
+  .chosen-row.correct{border-color:var(--green);background:rgba(57,224,122,.08);color:var(--text-bright)}
+  .chosen-row.wrong{border-color:var(--red);background:rgba(255,85,102,.08);color:var(--text-bright)}
+  .chosen-row.reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.05);color:var(--text-bright)}
+  .row-icon{flex-shrink:0;font-size:.95rem;margin-top:1px}
+  .exp-wrap{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+  .exp-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .exp-label::before{content:'∇'}
+  .exp-text{font-size:.93rem;color:var(--text);font-style:italic;line-height:1.65}
+
+  /* BUTTON */
+  .btn-row{display:flex;justify-content:flex-end;margin-top:26px}
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:11px 24px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:8px}
+  .btn:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(251,191,36,.3)}
+  .btn .arr{transition:transform .18s}
+  .btn:hover .arr{transform:translateX(4px)}
+
+  /* INTRO */
+  .intro{text-align:center;animation:cardIn .35s ease}
+  .intro-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px}
+  .intro-tag::before,.intro-tag::after{content:'';display:block;width:28px;height:1px;background:var(--accent)}
+  .intro h1{font-family:var(--serif);font-weight:300;font-size:clamp(1.9rem,5vw,3rem);color:var(--text-bright);line-height:1.2;margin-bottom:14px;letter-spacing:-.01em}
+  .intro h1 em{color:var(--accent);font-style:normal;font-weight:600}
+  .intro p{font-size:.9rem;color:var(--text-dim);font-family:var(--mono);margin-bottom:36px;line-height:1.7;max-width:420px;margin-left:auto;margin-right:auto}
+
+  /* SUMMARY */
+  .summary{text-align:center;animation:cardIn .4s ease}
+  .sum-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+  .sum-score{font-family:var(--serif);font-weight:300;font-size:clamp(3.5rem,12vw,5.5rem);color:var(--text-bright);line-height:1;margin-bottom:6px}
+  .sum-score span{color:var(--accent)}
+  .sum-pct{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:28px}
+  .sum-msg{font-size:1.03rem;font-style:italic;color:var(--text);line-height:1.7;max-width:440px;margin:0 auto 36px}
+  .sum-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn-reset{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .2s}
+  .btn-reset:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(251,191,36,.3)}
+  .btn-home{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:3px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+  .btn-home:hover{border-color:var(--text-dim);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="topbar">
+  <a class="home-btn" href="index.html">← Home</a>
+  <div class="bar-label" id="bar-label">VQE · Foundations</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  <div class="score-tag" id="score-tag">0 / 50</div>
+</div>
+
+<div class="stage"><div id="slot"></div></div>
+
+<script>
+const L=['A','B','C','D'];
+const data=[
+  /* ── Part 1: Motivation & Architecture ── */
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"Standard quantum algorithms like Grover's and Shor's rely on preparing an initial state, applying a fixed sequence of gates, and utilizing quantum interference to output the correct answer.",q:"Why are these standard gate-based algorithms currently impractical to run on near-term hardware?",o:["They require classical optimizers to function.","They rely on the variational principle.","They require fault-tolerant qubits and low error rates to handle their extremely high circuit depth.","They can only be executed on simulators."],a:2,e:"These traditional algorithms require long circuits and fault-tolerant logical qubits, which current noisy intermediate-scale quantum hardware cannot provide."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"Because we lack fault-tolerant qubits, researchers needed a different approach that could tolerate some noise and utilize shallower circuits.",q:"What field inspired the concept of using a simpler, trainable model to approximate correct answers on near-term hardware?",o:["Thermodynamics","Classical Machine Learning","Fluid Dynamics","Cryptography"],a:1,e:"VQAs are inspired by machine learning, where a simpler model is trained via optimization and hyperparameter tuning to approximately provide the correct information."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"To create a trainable quantum circuit like a machine learning model, we must use specific types of quantum operations.",q:"What is the fundamental building block of a Variational Quantum Algorithm's circuit?",o:["Fixed Pauli-X gates","Parameterized quantum gates","Measurement gates","Swap networks"],a:1,e:"The starting point of a VQA is parameterized quantum gates, which are unitary matrices that depend on one or more continuous parameters."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"These parameterized gates allow us to adjust the quantum state continuously. Concrete examples help solidify the concept.",q:"Which of the following is a prime example of a parameterized quantum gate?",o:["A Hadamard gate","A CNOT gate","A rotational gate like Rₓ(θ)","A Toffoli gate"],a:2,e:"Rotational gates such as Rₓ, R_y, or R_z depend on a real-valued parameter θ, dictating a rotation angle around an axis."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"By combining parameterized gates with fixed gates (like Hadamard or CNOT), we create the central quantum component of a VQA.",q:"What do we call a quantum circuit that contains at least one parameter-dependent gate?",o:["A classical circuit","A parameterized quantum circuit","A completely fault-tolerant circuit","A Grover oracle"],a:1,e:"This combination is simply called a parameterized quantum circuit, and its parameters influence the overall unitary transformation achieved."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"Once a parameterized circuit acts on an initial state, we must evaluate its output to know how well the current parameters are performing.",q:"What component evaluates the bitstrings measured from the quantum circuit to measure the quality of the current parameters?",o:["The Hadamard transform","The cost function C(θ)","The quantum oracle","The amplitude amplifier"],a:1,e:"A cost function states the quality of our current circuit relative to our goal, such as minimizing energy or optimizing a loss function."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"With the circuit and the cost function defined, we can construct the full VQA architecture.",q:"How would you describe the overall structural paradigm of a VQA?",o:["A strictly quantum process","A fully classical simulation","A hybrid quantum-classical loop","A one-way quantum teleportation"],a:2,e:"A VQA is a hybrid quantum-classical algorithm that alternates between quantum execution and classical computation in a loop."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"This hybrid loop begins with a quantum step. Let's trace exactly what happens in a single iteration.",q:"What is the very first step in a single iteration of the VQA loop?",o:["Using a classical optimizer to find the global minimum.","Plugging an initial guess of parameter θ into the parameterized circuit and measuring it.","Calculating the exact gradient analytically.","Decomposing a matrix into Pauli strings."],a:1,e:"We start by taking a good guess of the parameter θ, plugging it into our quantum circuit, executing it, and measuring the outcome."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"After the quantum computer provides measurement results, the classical computer takes over.",q:"What does the classical optimizer do with the evaluated cost function C(θ)?",o:["It converts the cost function into a quantum state.","It runs Grover's search to find the minimum.","It updates the parameters θ to improve the cost function for the next iteration.","It discards the cost function and restarts the quantum computer."],a:2,e:"The classical optimizer uses the evaluated cost function and a specific update rule to provide a better set of parameters for the next quantum execution."},
+  {s:"Part 1 · Motivation & the VQA Architecture",p:"We can now formally define the core components required to build a VQA.",q:"Which three distinct components form the foundation of any Variational Quantum Algorithm?",o:["An oracle, a cost function, and a register","The Ansatz, the cost function, and the classical optimizer","A Pauli-X gate, a CNOT gate, and a Hadamard gate","A dataset, a classical neural network, and a loss function"],a:1,e:"Every VQA requires an Ansatz (the parameterized circuit encoding the problem), a cost function (the objective to minimize/maximize), and a classical optimizer (the update mechanism)."},
+
+  /* ── Part 2: The Variational Principle ── */
+  {s:"Part 2 · The Variational Principle",p:"The physics underlying why this hybrid loop works for finding ground states relies on a fundamental rule.",q:"What core concept states that measuring a physical system with any trial state will yield an energy greater than or equal to the system's ground state energy?",o:["The Parameter Shift Rule","The Variational Principle","Trotterization","Quantum Interference"],a:1,e:"The variational principle dictates that the expected energy of any physical state is bounded from below by the true ground state energy E₀."},
+  {s:"Part 2 · The Variational Principle",p:"To apply this principle, we must describe the physical system mathematically.",q:"What mathematical object is used to describe the energy of the physical system in quantum mechanics?",o:["A unitary matrix called a gate","A Hermitian matrix called a Hamiltonian","A scalar value called an Ansatz","A stochastic vector"],a:1,e:"The physical system is defined by a Hamiltonian, which is a Hermitian matrix representing the system's total energy."},
+  {s:"Part 2 · The Variational Principle",p:"The goal of many physical problems is to find the lowest energy state — the ground state.",q:"In linear algebra terms, finding the ground state energy E₀ of a Hamiltonian corresponds to finding what?",o:["The highest singular value","The trace of the matrix","The lowest eigenvalue of the Hermitian matrix","The determinant of the matrix"],a:2,e:"Because the Hamiltonian is a Hermitian matrix, its ground state energy corresponds directly to its lowest eigenvalue."},
+  {s:"Part 2 · The Variational Principle",p:"Let's look at the mathematics of the variational principle. We define an orthonormal basis of the Hamiltonian's eigenvectors.",q:"How can we mathematically represent any arbitrary trial quantum state |ψ⟩ relative to the Hamiltonian's eigenvectors?",o:["As a single purely real number.","As a convex combination (weighted sum) of the orthonormal basis formed by the eigenvectors of the Hamiltonian.","As the product of all eigenvalues.","As a tensor product of classical bits."],a:1,e:"Since the Hamiltonian is a matrix, its eigenstates form an orthonormal basis, allowing any state |ψ⟩ to be written as a linear combination of these eigenvectors."},
+  {s:"Part 2 · The Variational Principle",p:"When calculating the expectation value E = ⟨ψ|H|ψ⟩, we substitute our trial state with its convex combination representation.",q:"What mathematical property of the inner product allows us to pull the summation and coefficients out of the expectation value equation?",o:["Non-convexity","Bi-linearity of the inner product","Orthogonality","Commutativity"],a:1,e:"The linearity (or bi-linearity) of the inner product allows us to expand the state and pull the constants and summations outside the bracket."},
+  {s:"Part 2 · The Variational Principle",p:"In the middle of the expectation value proof, we encounter the term H|ψᵢ⟩.",q:"Using the eigenvalue equation, what can we substitute for the term H|ψᵢ⟩?",o:["0","Eᵢ|ψᵢ⟩","H²","1"],a:1,e:"The eigenvalue equation states that applying the Hamiltonian matrix H to its eigenvector |ψᵢ⟩ yields the eigenvalue Eᵢ multiplied by the eigenvector |ψᵢ⟩."},
+  {s:"Part 2 · The Variational Principle",p:"Toward the end of the proof, we evaluate the inner product of the basis vectors ⟨ψᵢ|ψⱼ⟩.",q:"Because the eigenvectors form an orthonormal basis, what mathematical function does ⟨ψᵢ|ψⱼ⟩ reduce to?",o:["The Pauli matrix","The Identity matrix","The Kronecker Delta δᵢⱼ","The continuous integral"],a:2,e:"Orthonormal vectors are orthogonal (dot product is 0 if i ≠ j) and normalized (dot product is 1 if i = j), which is exactly the definition of the Kronecker Delta."},
+  {s:"Part 2 · The Variational Principle",p:"With the Kronecker Delta applied, the expectation value simplifies significantly.",q:"What is the final mathematical description of the expected energy of our trial state?",o:["It is exactly equal to the lowest eigenvalue.","It is a weighted average of the energy eigenvalues.","It is the sum of all complex coefficients.","It is zero."],a:1,e:"The derivation shows that the energy is the sum of the absolute squared coefficients multiplied by their corresponding eigenvalues — a weighted average of the energy eigenvalues."},
+  {s:"Part 2 · The Variational Principle",p:"Because the energy is a weighted average of eigenvalues, we can bound it from below.",q:"How does this weighted average prove the variational principle mathematically?",o:["A weighted average of values must be greater than or equal to the smallest value in the set.","The weights always sum to zero.","The coefficients cancel out the lowest eigenvalue.","It proves the energy can be lower than E₀."],a:0,e:"Because the convex combination weights sum to 1, a weighted average can never be strictly lower than the lowest possible individual value (the ground state E₀), establishing the bound E ≥ E₀."},
+  {s:"Part 2 · The Variational Principle",p:"By applying this principle to VQAs, we change how we search for the ground state.",q:"Instead of optimizing over all possible physical quantum states, what restricts the search space in a VQA?",o:["The classical optimizer's memory limit.","The states that are reachable by our specific Ansatz (parameterized circuit).","The number of eigenvalues in the Hamiltonian.","The number of shots taken."],a:1,e:"VQAs restrict the optimization to the subset of quantum states that can be generated by tuning the parameters of our chosen Ansatz."},
+
+  /* ── Part 3: VQE — The Algorithm ── */
+  {s:"Part 3 · VQE — The Algorithm",p:"The most prominent VQA explicitly designed around the variational principle is the Variational Quantum Eigensolver (VQE).",q:"Why don't we just find the ground state classically by diagonalizing the Hamiltonian matrix?",o:["Classical computers cannot perform matrix multiplication.","Diagonalizing large matrices requires an operation cost that scales exponentially with the system size, making it intractable for large systems.","The Hamiltonian matrix does not contain eigenvalues.","Classical algorithms cannot use floating-point numbers."],a:1,e:"As physical systems grow, the Hamiltonian matrix grows exponentially large, making classical diagonalization (which scales up to O(N³)) too expensive."},
+  {s:"Part 3 · VQE — The Algorithm",p:"In a VQE, the quantum computer bypasses this classical matrix multiplication bottleneck.",q:"How does the VQE utilize the quantum computer to avoid full matrix diagonalization?",o:["It uses the quantum computer to directly print the matrix diagonal.","It uses the quantum computer to estimate the cost of the expectation value directly.","It stores the entire matrix in quantum memory.","It relies on quantum interference to erase the matrix."],a:1,e:"Instead of computing the massive matrix mathematically, the VQE uses the quantum device to measure and estimate the expectation value of a physical state."},
+  {s:"Part 3 · VQE — The Algorithm",p:"However, a quantum computer cannot measure an arbitrary complex Hamiltonian in a single operation.",q:"To measure the Hamiltonian on a quantum device, what must we decompose the Hamiltonian into?",o:["Classical boolean variables","A combination of Pauli strings (e.g., I ⊗ X ⊗ I ⊗ X)","Continuous integrals","A single rotational gate"],a:1,e:"The Hamiltonian is mathematically decomposed into a weighted sum of Pauli strings, which are Hermitian operators constructed from basic Pauli gates."},
+  {s:"Part 3 · VQE — The Algorithm",p:"Once decomposed into Pauli strings, we measure our parameterized quantum circuit separately for each term.",q:"How do we calculate the total expected energy using these Pauli strings?",o:["By multiplying the energy of each string together.","By running a single measurement that captures all strings simultaneously.","By measuring the energy for each Pauli string separately and summing their weighted average.","By ignoring strings that contain the Pauli-Z gate."],a:2,e:"Because expectation values are linear, we measure the system with respect to each individual Pauli string and sum up the results according to their prefactors."},
+  {s:"Part 3 · VQE — The Algorithm",p:"Measuring a quantum state probabilistically collapses it, yielding only a single sample per execution.",q:"What term is used to describe the multiple repeated executions of a quantum circuit needed to accurately approximate the expectation value?",o:["Gradients","Shots","Iterations","Poly terms"],a:1,e:"Every execution provides one sample, so we must rerun the experiment multiple times — known as shots — to calculate a reliable weighted average."},
+  {s:"Part 3 · VQE — The Algorithm",p:"After the quantum device executes these shots and returns an energy estimate, the loop continues.",q:"When does the classical optimizer decide to stop updating the parameters and end the VQE algorithm?",o:["Only when the energy reaches exactly 0.","When all qubits decay to the ground state naturally.","When a specific stopping criterion is met, such as reaching a maximum number of iterations or the energy difference dropping below a threshold.","When the parameterized gates complete a full 360-degree rotation."],a:2,e:"The loop repeats until it hits a stopping criteria, indicating the optimizer has likely converged on a local or global minimum."},
+  {s:"Part 3 · VQE — The Algorithm",p:"We now understand the full VQE loop. But why is it feasible today on noisy devices?",q:"Why is VQE particularly well-suited for near-term (NISQ) quantum devices?",o:["It requires deep circuits with heavy error correction.","You can freely choose shallow circuits with low connectivity requirements, minimizing error buildup.","It requires zero classical computing power.","It relies on Grover's full oracle mapping."],a:1,e:"The flexibility of the Ansatz means you can design shallow circuits with low depth, allowing successful execution before decoherence ruins the noisy qubits."},
+
+  /* ── Part 4: The Ansatz ── */
+  {s:"Part 4 · Designing the Ansatz",p:"Designing the Ansatz is a critical design choice involving several conflicting goals.",q:"Which Ansatz property refers to the circuit's ability to span enough quantum states to actually approximate the true ground state?",o:["Expressivity","Hardware efficiency","Symmetry preservation","Trainability"],a:0,e:"Expressivity dictates how large of a search space the Ansatz covers; a highly expressive Ansatz is more likely to contain the true ground state."},
+  {s:"Part 4 · Designing the Ansatz",p:"An Ansatz can be expressive but impossible to optimize if the landscape offers no useful gradient information.",q:"Which Ansatz property ensures that the optimization landscape allows the classical optimizer to efficiently find parameter updates without getting stuck?",o:["Hardware efficiency","Trainability","Expressivity","State preparation"],a:1,e:"Trainability refers to having a favorable optimization landscape free of excessively flat regions, allowing gradients or heuristic updates to guide the parameters downhill."},
+  {s:"Part 4 · Designing the Ansatz",p:"An Ansatz must also be physically executable on the specific quantum chip you are using.",q:"If an Ansatz strictly utilizes the native gates and hardcoded physical connections of a specific quantum device, what goal is it prioritizing?",o:["Hamiltonian formulation","Hardware efficiency","Symmetry preservation","Expressivity"],a:1,e:"Hardware efficiency ensures the circuit can run directly on the physical chip without requiring expensive, deep transpilations or extra auxiliary qubits."},
+  {s:"Part 4 · Designing the Ansatz",p:"Some physical systems dictate that specific qubits are tightly linked by the problem's underlying structure.",q:"If we design an Ansatz so that modifying one specific qubit directly alters an entangled partner to mirror a physical molecule's structure, what are we preserving?",o:["Noise resilience","Symmetry preservation","Hardware efficiency","Linear entanglement"],a:1,e:"Symmetry preservation ensures that important structural properties of the target physical system are fundamentally baked into the quantum circuit."},
+  {s:"Part 4 · Designing the Ansatz",p:"In practice, there are two main categories of Ansatz design. The first relies heavily on the physics of the problem.",q:"What type of Ansatz is constructed directly using the Pauli string decomposition of the problem's physical system?",o:["Hardware-efficient Ansatz","Hamiltonian-based Ansatz","Adaptive Ansatz","Classical Ansatz"],a:1,e:"A Hamiltonian-based Ansatz uses the physical description of the system to design the unitary gates."},
+  {s:"Part 4 · Designing the Ansatz",p:"To construct a Hamiltonian-based Ansatz, we turn Hermitian Pauli strings into unitary gates.",q:"Mathematically, how is a Hermitian Pauli string (H_α) converted into a unitary parameterized gate?",o:["By adding an identity matrix.","By using the exponential map e^(−iθ_αH_α).","By multiplying it by zero.","By taking its trace."],a:1,e:"We create unitary gates by exponentiating the Pauli strings: e^(−iθ_αH_α), allowing us to apply them as layers in the circuit."},
+  {s:"Part 4 · Designing the Ansatz",p:"While physically accurate and highly expressive, the Hamiltonian Ansatz has major downsides on current hardware.",q:"What is the primary drawback of deploying a Hamiltonian-based Ansatz on current NISQ devices?",o:["It lacks expressivity.","It requires no classical optimizer.","Pauli strings may not map directly to native hardware gates, requiring deep circuits and auxiliary qubits.","It cannot be used for quantum chemistry."],a:2,e:"Because it isn't tailored to the hardware, compiling a Hamiltonian Ansatz often requires many SWAP gates and complex transpilations, exceeding the coherence limits of NISQ hardware."},
+  {s:"Part 4 · Designing the Ansatz",p:"To solve the depth issues of the Hamiltonian Ansatz, researchers developed an alternative tailored to the chip.",q:"What does a typical hardware-efficient Ansatz consist of?",o:["Layers of unparameterized Grover oracles.","Alternating layers of single-qubit parameterized rotational gates and fixed multi-qubit entanglement gates.","A single massive parameterized unitary gate applied to all qubits at once.","Only classical boolean operations."],a:1,e:"This hardware-friendly approach uses a layer of rotational gates (e.g., R_y, R_z) followed by an entanglement layer (e.g., CNOTs), repeated sequentially."},
+  {s:"Part 4 · Designing the Ansatz",p:"The entanglement layer within a hardware-efficient Ansatz can be structured differently depending on chip topology.",q:"If qubit 0 is entangled to qubit 1, qubit 1 to qubit 2, and the final qubit is entangled back to qubit 0, what type of entanglement structure is this?",o:["Linear entanglement","Ring entanglement","Star entanglement","Fully connected entanglement"],a:1,e:"This describes ring entanglement, looping the connections back to the start, which contrasts with linear entanglement that simply stops at the last qubit."},
+
+  /* ── Part 5: Classical Optimization ── */
+  {s:"Part 5 · Classical Optimization in VQE",p:"Once the Ansatz is chosen and executed, we must optimize the parameters. However, VQE optimization faces unique challenges.",q:"Why is optimizing a VQE landscape more difficult than typical classical convex optimization?",o:["Analytical gradients are often non-existent or very expensive, the landscape is non-convex, and measurements introduce hardware noise.","The parameters can only take integer values.","Quantum computers execute updates too fast for classical memory to store.","Cost functions cannot be defined for quantum states."],a:0,e:"The landscape is highly problematic due to noise, lack of cheap gradients, and a non-convex space featuring many local minima."},
+  {s:"Part 5 · Classical Optimization in VQE",p:"Because gradients are hard to compute in noisy environments, some optimizers rely purely on evaluating the cost function at different points.",q:"Which of the following is an example of a simple, gradient-free classical optimizer?",o:["COBYLA","ADAM","Shor's Algorithm","Backpropagation"],a:0,e:"COBYLA, Nelder-Mead, and Powell are popular gradient-free optimizers that work decently well in noisy, low-parameter regimes."},
+  {s:"Part 5 · Classical Optimization in VQE",p:"Despite the expense, gradients can be calculated precisely on quantum hardware using a specific mathematical trick.",q:"What technique allows us to calculate the exact analytical gradient of a quantum circuit by shifting the parameters forward and backward?",o:["Trotterization","The Parameter Shift Rule","The Kronecker Delta method","Hardware efficiency"],a:1,e:"The Parameter Shift Rule evaluates the circuit at θ + s and θ − s to find exact gradients, enabling gradient-based optimizers like ADAM or SPSA."},
+
+  /* ── Part 6: Applications ── */
+  {s:"Part 6 · Applications of VQE",p:"Having mastered the algorithm, we can look at its original and most prominent use case.",q:"What field originally motivated the invention of the VQE to simulate molecules and discover binding energies?",o:["Quantum Cryptography","Financial Modeling","Quantum Chemistry","Natural Language Processing"],a:2,e:"VQE was originally designed for quantum chemistry to simulate molecules and investigate chemical properties stored in their ground states."},
+  {s:"Part 6 · Applications of VQE",p:"VQE can also solve general optimization problems by mapping them to a physical Hamiltonian.",q:"To solve a combinatorial optimization problem using VQE, we encode the problem into a specific physical Hamiltonian. What is this called?",o:["The Markowitz Hamiltonian","The Ising Hamiltonian","The Pauli-Z matrix","The Parameter Shift formulation"],a:1,e:"Many optimization problems are mapped to an Ising Hamiltonian, representing a physical system of spins interacting in a magnetic field."},
+  {s:"Part 6 · Applications of VQE",p:"The Ising Hamiltonian closely maps to a common classical formulation for binary optimization problems.",q:"What mathematical framework corresponds one-to-one with the linear and quadratic interactions of an Ising Hamiltonian?",o:["Quadratic Unconstrained Binary Optimization (QUBO)","Support Vector Machines (SVM)","Fast Fourier Transform (FFT)","Non-convex neural networks"],a:0,e:"QUBO problems rely on binary variables minimizing a sum of linear and quadratic terms, perfectly mirroring the external field and spin interactions of the Ising model."},
+  {s:"Part 6 · Applications of VQE",p:"QUBOs mapped to VQEs can solve diverse real-world issues outside of physics.",q:"Which classical financial problem involves minimizing risk while maximizing expected return, and can be framed as a QUBO for VQE?",o:["The Traveling Salesperson Problem","The Knapsack Problem","The Markowitz Portfolio Optimization Problem","The Monte Carlo Simulation"],a:2,e:"The Markowitz Portfolio problem maps directly to a linear and quadratic structure suitable for a QUBO and subsequent VQE solving."},
+  {s:"Part 6 · Applications of VQE",p:"Optimization isn't just for portfolios — it is fundamentally tied to modern AI.",q:"If we treat the parameterized quantum circuit as a model and train it using VQE to optimize a loss function on data, what subfield are we exploring?",o:["Quantum Cryptography","Quantum Machine Learning","Theoretical fluid dynamics","Shor's factoring"],a:1,e:"Using a parameterized circuit as a trainable model to minimize a loss function is the foundation of Quantum Machine Learning."},
+
+  /* ── Part 7: Limitations & Variants ── */
+  {s:"Part 7 · Limitations & Future Variants",p:"With all these applications, we must realistically assess VQE's current standing.",q:"Does VQE currently demonstrate definitive 'quantum advantage' over classical computers for solving optimization problems?",o:["Yes, for all chemistry problems.","Yes, for finance problems.","No, it does not demonstrate quantum advantage yet.","No, because it is entirely classical."],a:2,e:"Despite its utility as a heuristic, VQE does not currently demonstrate quantum advantage; it still faces severe limitations and scalability issues."},
+  {s:"Part 7 · Limitations & Future Variants",p:"One massive limitation is the requirement to calculate expectation values by measuring many Pauli strings.",q:"As the simulated system size grows, what specific bottleneck rapidly increases execution time?",o:["Finding prime factors.","The massive measurement overhead due to the required number of shots for Pauli strings.","The number of classical bits required.","Classical diagonalization matrix limits."],a:1,e:"Because you must repeat the circuit multiple times for every Pauli string to build an expectation value, the measurement overhead scales terribly with system size."},
+  {s:"Part 7 · Limitations & Future Variants",p:"Beyond measurement overhead, the classical optimizer struggles in large parameter spaces.",q:"What is the term for a problematic optimization landscape where gradients vanish, leaving mostly flat regions that trap the optimizer?",o:["The Kronecker Delta","Barren Plateaus","Convex spaces","Expressivity peaks"],a:1,e:"Barren plateaus are overwhelmingly flat regions in the optimization landscape where gradients vanish, heavily stunting the classical optimizer's progress."},
+  {s:"Part 7 · Limitations & Future Variants",p:"Because pure VQE faces these issues, variants have been proposed. One heavily blends VQA concepts with Quantum Annealing.",q:"Which algorithm mimics quantum annealing by using Trotterization discretized into parameterized layers optimized classically?",o:["QAOA (Quantum Approximate Optimization Algorithm)","Shor's Algorithm","QPE (Quantum Phase Estimation)","Adaptive VQE"],a:0,e:"QAOA translates the continuous time evolution of quantum annealing into a layered parameterized circuit, blending it with classical optimization."},
+  {s:"Part 7 · Limitations & Future Variants",p:"Another variant alters the structure of the parameterized circuit dynamically during the optimization itself.",q:"What type of VQE algorithm slightly alters the actual gates of the Ansatz after each iteration instead of just updating parameters?",o:["Time-evolution VQE","Adaptive Ansatz VQE","Hardware-efficient VQE","QAOA"],a:1,e:"Adaptive Ansatz approaches dynamically change the actual layout and structure of the circuit based on optimization feedback."},
+  {s:"Part 7 · Limitations & Future Variants",p:"The literature on VQA is vast and constantly expanding. Understanding where the field began helps trace its trajectory.",q:"Where was the original, foundational paper for the VQE algorithm published approximately 12 years ago?",o:["In the Nature journal","By the IBM Qiskit blog","In the Physical Review Letters","By the Fraunhofer Institute"],a:0,e:"The original VQE paper, which sparked this entire subfield, was famously published in the Nature journal."},
+];
+
+let qi=0,step='intro',score=0,answered=0;
+const slot=document.getElementById('slot'),fill=document.getElementById('prog-fill'),barLbl=document.getElementById('bar-label'),scorEl=document.getElementById('score-tag');
+
+function updateBar(){
+  fill.style.width=(answered/50*100)+'%';
+  scorEl.textContent=score+' / 50';
+  barLbl.textContent=step==='intro'?'VQE · Foundations':step==='summary'?'Complete':`Q${qi+1} of 50`;
+}
+
+function swap(fn){
+  const cur=slot.firstChild;
+  if(cur){cur.classList.add('out');setTimeout(()=>{slot.innerHTML='';fn();},220);}
+  else fn();
+}
+
+function showIntro(){
+  step='intro';updateBar();
+  const d=document.createElement('div');d.className='intro';
+  d.innerHTML=`
+    <div class="intro-tag">Module 04 · 50 Questions</div>
+    <h1>VQE — <em>Foundations</em> &amp;<br>The Variational Principle</h1>
+    <p>From parameterized gates and the variational principle through Ansatz design, classical optimization, and real-world applications.</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn" onclick="startQuiz()">Begin <span class="arr">→</span></button>
+    </div>`;
+  slot.appendChild(d);
+}
+
+function startQuiz(){qi=0;score=0;answered=0;swap(()=>showPreview());}
+
+function showPreview(){
+  step='preview';updateBar();
+  const d=document.createElement('div');d.className='card';
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot preview-dot"></span>
+      <span class="card-kind preview-kind">Preview</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    <div class="section-label">${data[qi].s}</div>
+    <div class="preview-body">${data[qi].p}</div>
+    <div class="btn-row"><button class="btn" onclick="swap(showQuestion)">Question <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function showQuestion(){
+  step='question';updateBar();
+  const item=data[qi];
+  const d=document.createElement('div');d.className='card';
+  const optHtml=item.o.map((o,oi)=>`<button class="option" id="opt${oi}" onclick="pick(${oi})"><span class="opt-letter">${L[oi]}</span><span>${o}</span></button>`).join('');
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot question-dot"></span>
+      <span class="card-kind question-kind">Question ${qi+1} of 50</span>
+    </div>
+    <div class="question-body">${item.q}</div>
+    <div class="options">${optHtml}</div>`;
+  slot.appendChild(d);
+}
+
+function pick(oi){
+  const item=data[qi];
+  document.querySelectorAll('.option').forEach(b=>b.disabled=true);
+  const correct=item.a;
+  document.querySelectorAll('.option')[correct].classList.add(oi===correct?'opt-correct':'opt-reveal');
+  if(oi!==correct) document.querySelectorAll('.option')[oi].classList.add('opt-wrong');
+  setTimeout(()=>swap(()=>showResult(oi)),480);
+}
+
+function showResult(oi){
+  const item=data[qi];const ok=oi===item.a;
+  if(ok)score++;answered++;step='result';updateBar();
+  const d=document.createElement('div');d.className='card';
+  const dotCls=ok?'result-dot-correct':'result-dot-wrong';
+  const kindCls=ok?'result-kind-correct':'result-kind-wrong';
+  let rowsHtml=`<div class="chosen-row ${ok?'correct':'wrong'}"><span class="row-icon">${ok?'✓':'✗'}</span><span>${item.o[oi]}</span></div>`;
+  if(!ok) rowsHtml+=`<div class="chosen-row reveal"><span class="row-icon">✓</span><span><strong>Correct:</strong> ${item.o[item.a]}</span></div>`;
+  const isLast=qi===49;
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot ${dotCls}"></span>
+      <span class="card-kind ${kindCls}">${ok?'Correct!':'Incorrect'}</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    ${rowsHtml}
+    <div class="exp-wrap">
+      <div class="exp-label">Explanation</div>
+      <div class="exp-text">${item.e}</div>
+    </div>
+    <div class="btn-row"><button class="btn" onclick="advance()">${isLast?'See Results':'Next'} <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function advance(){
+  if(qi===49){swap(showSummary);return;}
+  qi++;swap(showPreview);
+}
+
+function showSummary(){
+  step='summary';updateBar();
+  const pct=Math.round(score/50*100);
+  const msgs=[
+    [80,"Outstanding. You have a rock-solid foundation in VQE — from the variational principle proof through Ansatz design and optimization."],
+    [60,"Excellent work. The core loop and variational principle are clear. Revisit the Ansatz properties and the Parameter Shift Rule on your next pass."],
+    [40,"Good progress. Focus on Parts 2 and 4 — the variational principle proof and Ansatz design decisions are the heart of this lecture."],
+    [20,"A solid start. The hybrid quantum-classical paradigm takes time to internalize. Go back to Part 1 and trace the loop step by step."],
+    [-1,"VQE is mathematically rich. Return to the beginning and take it one part at a time — each pass adds a new layer of clarity."]
+  ];
+  const msg=msgs.find(([t])=>pct>t)[1];
+  const d=document.createElement('div');d.className='summary';
+  d.innerHTML=`
+    <div class="sum-tag">Module 04 Complete · VQE Foundations</div>
+    <div class="sum-score">${score}<span>/50</span></div>
+    <div class="sum-pct">${pct}% correct</div>
+    <div class="sum-msg">${msg}</div>
+    <div class="sum-btns">
+      <a class="btn-home" href="index.html">← All Modules</a>
+      <button class="btn-reset" onclick="swap(showIntro)">↺ Retake</button>
+    </div>`;
+  slot.appendChild(d);
+}
+
+showIntro();
+</script>
+</body>
+</html>
