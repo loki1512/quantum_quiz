@@ -83,6 +83,12 @@
   .mod-green:hover{border-color:rgba(57,224,122,.5);box-shadow:0 12px 40px rgba(57,224,122,.1)}
   .mod-green::before{background:linear-gradient(135deg,rgba(57,224,122,.04),transparent)}
 
+  .mode-orange{border-color:rgba(251,146,60,.2)}
+  .mode-orange:hover{border-color:rgba(251,146,60,.5);
+    box-shadow:0 12px 40px rgba(251,146,60,.1)}
+  .mode-orange::before{background:linear-gradient(135deg,rgba(251,146,60,.04),transparent)}
+
+
   .mod-num{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:18px}
   .mod-cyan  .mod-num{color:var(--cyan)}
   .mod-violet.mod-num{color:var(--violet)}
@@ -90,6 +96,8 @@
   .mod-rose  .mod-num{color:var(--rose)}
   .mod-sky   .mod-num{color:var(--sky)}
   .mod-green .mod-num{color:var(--green)}
+  .mode-orange .mod-num{color:var(--orange)}
+
   /* fallback — set explicitly */
   .c-cyan  {color:var(--cyan)}
   .c-violet{color:var(--violet)}
@@ -97,6 +105,7 @@
   .c-rose  {color:var(--rose)}
   .c-sky   {color:var(--sky)}
   .c-green {color:var(--green)}
+  .c-orange {color:var(--orange)}
 
   .mod-icon{font-size:2rem;margin-bottom:14px;line-height:1}
   .mod-title{font-family:var(--serif);font-size:1.3rem;font-weight:400;color:var(--text-bright);line-height:1.3;margin-bottom:10px}
@@ -111,7 +120,7 @@
   .p-rose  {color:var(--rose);  border-color:rgba(251,113,133,.25);background:rgba(251,113,133,.06)}
   .p-sky   {color:var(--sky);   border-color:rgba(56,189,248,.25); background:rgba(56,189,248,.06)}
   .p-green {color:var(--green); border-color:rgba(57,224,122,.25); background:rgba(57,224,122,.06)}
-
+  .p-orange {color:var(--orange); border-color:rgba(251,146,60,.25); background:rgba(251,146,60,.06)}
   .mod-arrow{font-family:var(--mono);font-size:14px;color:var(--text-dim);transition:color .2s,transform .2s}
   .module:hover .mod-arrow{transform:translateX(4px)}
   .mod-cyan:hover  .mod-arrow{color:var(--cyan)}
@@ -120,6 +129,7 @@
   .mod-rose:hover  .mod-arrow{color:var(--rose)}
   .mod-sky:hover   .mod-arrow{color:var(--sky)}
   .mod-green:hover .mod-arrow{color:var(--green)}
+  .mod-orange:hover .mod-arrow{color:var(--orange)}
 
   /* progress bar inside card */
   .mod-progress{height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:18px}
@@ -130,7 +140,7 @@
   .mod-rose  .mod-fill{background:linear-gradient(90deg,#e11d48,var(--rose))}
   .mod-sky   .mod-fill{background:linear-gradient(90deg,#0369a1,var(--sky))}
   .mod-green .mod-fill{background:linear-gradient(90deg,#16a34a,var(--green))}
-
+  .mod-orange .mod-fill{background:linear-gradient(90deg,#c2410c,var(--orange))}
   /* HOW IT WORKS */
   .how{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
   .step{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px;display:flex;gap:14px;align-items:flex-start}
