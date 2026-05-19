@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adv VQA Part 3 — Quantum Professor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050a12; --surface:#0a1525; --border:#1a3050;
+    --accent:#f97316; --accent-dim:#c2410c; --gold:#f0c040;
+    --green:#39e07a; --red:#ff5566;
+    --text:#c8dff0; --text-dim:#6a8aaa; --text-bright:#e8f4ff;
+    --mono:'Space Mono',monospace; --serif:'Crimson Pro',Georgia,serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:18px;line-height:1.7;min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center}
+
+  .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(249,115,22,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(249,115,22,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+  .bg-glow{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(130px)}
+  .bg-glow-1{width:700px;height:700px;background:radial-gradient(circle,rgba(180,60,5,.13),transparent 70%);top:-250px;left:-250px}
+  .bg-glow-2{width:500px;height:500px;background:radial-gradient(circle,rgba(249,115,22,.07),transparent 70%);bottom:0;right:-150px;animation:bgPulse 9s ease-in-out infinite alternate}
+  @keyframes bgPulse{from{opacity:.5}to{opacity:1}}
+
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,10,18,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:11px 28px;display:flex;align-items:center;gap:16px}
+  .home-btn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:2px;white-space:nowrap;transition:all .15s;flex-shrink:0}
+  .home-btn:hover{color:var(--accent);border-color:rgba(249,115,22,.4)}
+  .bar-label{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;min-width:110px}
+  .progress-track{flex:1;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px rgba(249,115,22,.5)}
+  .score-tag{font-family:var(--mono);font-size:10px;color:var(--gold);white-space:nowrap;min-width:55px;text-align:right}
+
+  .stage{position:relative;z-index:1;width:100%;max-width:660px;padding:110px 24px 60px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:36px 36px 28px;animation:cardIn .32s cubic-bezier(.4,0,.2,1)}
+  @keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .card.out{animation:cardOut .22s cubic-bezier(.4,0,.2,1) forwards}
+  @keyframes cardOut{to{opacity:0;transform:translateY(-14px)}}
+
+  .card-header{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .card-kind{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+  .card-num{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto}
+
+  .preview-dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .preview-kind{color:var(--accent)}
+  .section-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);opacity:.6;margin-bottom:10px}
+  .preview-body{font-family:var(--serif);font-size:1.08rem;font-style:italic;color:var(--text);line-height:1.75;margin-bottom:28px}
+
+  .question-dot{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+  .question-kind{color:var(--gold)}
+  .question-body{font-family:var(--serif);font-size:1.1rem;color:var(--text-bright);line-height:1.65;margin-bottom:22px}
+
+  .options{display:flex;flex-direction:column;gap:9px;margin-bottom:6px}
+  .option{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:transparent;color:var(--text);font-family:var(--serif);font-size:.97rem;text-align:left;line-height:1.5;width:100%;transition:border-color .14s,background .14s,color .14s}
+  .option:hover:not(:disabled){border-color:rgba(249,115,22,.5);background:rgba(249,115,22,.05);color:var(--text-bright)}
+  .option:disabled{cursor:default}
+  .opt-letter{font-family:var(--mono);font-size:10px;color:var(--text-dim);border:1px solid var(--border);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:2px;transition:all .14s}
+  .option:hover:not(:disabled) .opt-letter{border-color:var(--accent);color:var(--accent)}
+  .option.opt-correct{border-color:var(--green);background:rgba(57,224,122,.09);color:var(--text-bright)}
+  .option.opt-correct .opt-letter{border-color:var(--green);color:var(--green);background:rgba(57,224,122,.15)}
+  .option.opt-wrong{border-color:var(--red);background:rgba(255,85,102,.09);color:var(--text-bright)}
+  .option.opt-wrong .opt-letter{border-color:var(--red);color:var(--red);background:rgba(255,85,102,.15)}
+  .option.opt-reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.04)}
+  .option.opt-reveal .opt-letter{border-color:var(--green);color:var(--green)}
+
+  .result-dot-correct{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .result-dot-wrong{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .result-kind-correct{color:var(--green)}
+  .result-kind-wrong{color:var(--red)}
+  .chosen-row{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:4px;border:1px solid;margin-bottom:12px;font-family:var(--serif);font-size:.97rem;line-height:1.5}
+  .chosen-row.correct{border-color:var(--green);background:rgba(57,224,122,.08);color:var(--text-bright)}
+  .chosen-row.wrong{border-color:var(--red);background:rgba(255,85,102,.08);color:var(--text-bright)}
+  .chosen-row.reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.05);color:var(--text-bright)}
+  .row-icon{flex-shrink:0;font-size:.95rem;margin-top:1px}
+  .exp-wrap{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+  .exp-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .exp-label::before{content:'⬡'}
+  .exp-text{font-size:.93rem;color:var(--text);font-style:italic;line-height:1.65}
+
+  .btn-row{display:flex;justify-content:flex-end;margin-top:26px}
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:11px 24px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:8px}
+  .btn:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(249,115,22,.35)}
+  .btn .arr{transition:transform .18s}
+  .btn:hover .arr{transform:translateX(4px)}
+
+  .intro{text-align:center;animation:cardIn .35s ease}
+  .intro-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px}
+  .intro-tag::before,.intro-tag::after{content:'';display:block;width:28px;height:1px;background:var(--accent)}
+  .intro h1{font-family:var(--serif);font-weight:300;font-size:clamp(1.9rem,5vw,3rem);color:var(--text-bright);line-height:1.2;margin-bottom:14px;letter-spacing:-.01em}
+  .intro h1 em{color:var(--accent);font-style:normal;font-weight:600}
+  .intro p{font-size:.9rem;color:var(--text-dim);font-family:var(--mono);margin-bottom:36px;line-height:1.7;max-width:420px;margin-left:auto;margin-right:auto}
+
+  .summary{text-align:center;animation:cardIn .4s ease}
+  .sum-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+  .sum-score{font-family:var(--serif);font-weight:300;font-size:clamp(3.5rem,12vw,5.5rem);color:var(--text-bright);line-height:1;margin-bottom:6px}
+  .sum-score span{color:var(--accent)}
+  .sum-pct{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:28px}
+  .sum-msg{font-size:1.03rem;font-style:italic;color:var(--text);line-height:1.7;max-width:440px;margin:0 auto 36px}
+  .sum-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn-reset{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .2s}
+  .btn-reset:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(249,115,22,.35)}
+  .btn-home{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:3px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+  .btn-home:hover{border-color:var(--text-dim);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="topbar">
+  <a class="home-btn" href="index.html">← Home</a>
+  <div class="bar-label" id="bar-label">Adv VQA · Part 3</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  <div class="score-tag" id="score-tag">0 / 50</div>
+</div>
+
+<div class="stage"><div id="slot"></div></div>
+
+<script>
+const L=['A','B','C','D'];
+const data=[
+  /* ── Part 1: NISQ & Industrial Motivation ── */
+  {s:"Part 1 · NISQ Algorithms & Industrial Motivation",p:"The lecture begins by introducing Dr. Bhardwaj and the specific phase of quantum hardware he currently focuses on.",q:"What class of early-stage fault-tolerant algorithms does Dr. Bhardwaj specialize in?",o:["Fault-tolerant Shor's algorithms","NISQ algorithms","Post-quantum cryptography","Classical exact diagonalization"],a:1,e:"Dr. Bhardwaj specializes in NISQ (Noisy Intermediate-Scale Quantum) algorithms, which act as early-stage fault-tolerant methods for current hardware."},
+  {s:"Part 1 · NISQ Algorithms & Industrial Motivation",p:"Building on the introduction to NISQ algorithms, these methods have specific applications in scientific fields.",q:"Which primary scientific application of quantum computing is highlighted early in the lecture as Dr. Bhardwaj's deep focus?",o:["High-frequency trading","Quantum chemistry","Image recognition","Natural language processing"],a:1,e:"The session initially focuses on quantum chemistry, a key application of variational quantum algorithms before pivoting to industry optimization."},
+  {s:"Part 1 · NISQ Algorithms & Industrial Motivation",p:"Beyond chemistry, the lecture transitions to problems highly relevant to the industry today.",q:"What ubiquitous industrial use case is introduced alongside quantum chemistry?",o:["Quantum optimization","Hash decrypting","Server hosting","Data storage compression"],a:0,e:"Quantum optimization is presented as an ubiquitous use case pressing the industry today."},
+  {s:"Part 1 · NISQ Algorithms & Industrial Motivation",p:"Quantum optimization applies to numerous distinct industrial scenarios.",q:"Which of the following is NOT mentioned as an optimization problem Dr. Bhardwaj worked on?",o:["Optimization of a peak load at a charging station","Optimization of truck routes","Optimal resource allocation","Optimization of classical silicon chip layouts"],a:3,e:"The three highlighted industry problems are charging station peak loads, truck routing, and resource allocation; silicon layout is not mentioned."},
+  {s:"Part 1 · NISQ Algorithms & Industrial Motivation",p:"Understanding why we need quantum computers for these optimization tasks is crucial, considering classical computers can already solve them.",q:"Why pursue quantum optimization if classical computers can already find somewhat 'good enough' solutions?",o:["Classical computers cannot solve optimization problems at all.","A fractional efficiency gain (e.g., 0.1%) creates significant resource savings at a massive scale.","Classical computers break down when computing anything over 10 variables.","Quantum computers do not use electricity."],a:1,e:"At an industrial scale (e.g., 10,000 trucks), even a 0.1% efficiency improvement over classical solutions yields massive resource savings."},
+
+  /* ── Part 2: EV Charging Station Problem ── */
+  {s:"Part 2 · EV Charging Station Optimization",p:"Focusing on the first specific optimization problem, we look at electric vehicle (EV) charging stations.",q:"What is the primary objective when optimizing the peak load at an EV charging station?",o:["To charge cars as fast as possible.","To minimize the peak power drawn at any given instant.","To charge all cars exactly at the same time.","To use the maximum amount of electricity possible."],a:1,e:"The objective is to flatten the power draw at any given instant, minimizing the peak load to prevent the charging station's lifespan from degrading."},
+  {s:"Part 2 · EV Charging Station Optimization",p:"In the peak load problem, finding a solution is restricted by the limits placed on the cars.",q:"What constraint limits the search space for this specific charging problem?",o:["The physical size of the cars.","Cars can only charge within their allocated time intervals.","The total voltage of the local grid.","The objective function."],a:1,e:"Constraints, like cars needing to charge within specific allotted time intervals, define the allowable search space for the mathematical model."},
+  {s:"Part 2 · EV Charging Station Optimization",p:"To solve this continuous physical problem on a quantum computer, it must be adapted.",q:"How is the continuous real-world charging problem prepared for quantum computation?",o:["By discretizing power units into small chunks and time into specific hour blocks.","By running an analog simulation.","By converting the cars into quantum states.","By ignoring time and only measuring power."],a:0,e:"Because continuous problems can't currently be solved natively, the power and time units are discretized into manageable blocks."},
+  {s:"Part 2 · EV Charging Station Optimization",p:"After discretizing the problem, mathematical modeling assigns specific variables.",q:"What is a 'decision variable' in this context?",o:["A variable that decides if the quantum computer should turn on.","A binary indicator (1 or 0) denoting if a specific car is getting charged at a specific time unit.","A floating-point number representing battery health.","The final cost of the electricity."],a:1,e:"A decision variable is assigned as 1 if a car charges in a specific block and 0 if it does not, framing the objective function."},
+  {s:"Part 2 · EV Charging Station Optimization",p:"Once decision variables are assigned, the problem is formulated mathematically into a specific structure.",q:"What matrix structure encompasses the constraints and objective function of the problem?",o:["Density Matrix","QUBO (Quadratic Unconstrained Binary Optimization) matrix","Hermitian Adjacency Matrix","Pauli Matrix"],a:1,e:"The problem is relabeled into a QUBO matrix, which holds the mathematical constraints in a binary framework."},
+
+  /* ── Part 3: QUBO & Ising Pipeline ── */
+  {s:"Part 3 · QUBO Matrices & the Ising Pipeline",p:"The visual state of the QUBO matrix directly reflects the difficulty of the optimization.",q:"What physical characteristic of the QUBO matrix defines the problem's complexity?",o:["Its total byte size","Its sparsity (dense vs. sparse)","The diagonal negative values","The number of rows"],a:1,e:"A denser QUBO matrix represents a harder, more complex problem with many solutions, while a sparse matrix indicates an easier problem."},
+  {s:"Part 3 · QUBO Matrices & the Ising Pipeline",p:"The QUBO matrix must be mapped further down the pipeline before running on quantum hardware.",q:"What is the step immediately following the creation of a QUBO matrix in the algorithmic workflow?",o:["Measuring the qubits","Mapping to an Ising Hamiltonian","Applying QAOA","Discretizing the variables"],a:1,e:"The workflow logically converts the QUBO matrix to an Ising Hamiltonian."},
+  {s:"Part 3 · QUBO Matrices & the Ising Pipeline",p:"Understanding the Ising Hamiltonian helps bridge abstract math to physical qubits.",q:"What does the Ising Hamiltonian eventually get transformed into so it can be directly embedded on the hardware?",o:["A problem graph","A qubit Hamiltonian","A continuous function","A neutral atom array"],a:1,e:"The Ising Hamiltonian is subjected to transformations to yield a qubit Hamiltonian, which the quantum chip can physically read."},
+  {s:"Part 3 · QUBO Matrices & the Ising Pipeline",p:"Returning to matrix density, giving the system more physical flexibility changes the matrix structure.",q:"If an EV can charge in 3 time slots instead of 2, what happens to the QUBO matrix?",o:["It becomes sparser.","It gets denser because there are more possible solutions.","It remains completely unchanged.","It shrinks in dimension."],a:1,e:"Extra degrees of freedom introduce more possible solutions, which makes the QUBO matrix denser and mathematically harder."},
+  {s:"Part 3 · QUBO Matrices & the Ising Pipeline",p:"Adding more distinct variables, such as overlapping cars, drastically increases resource requirements.",q:"In the provided examples, how does increasing from 1 car with 3 slots to 2 cars with overlapping slots affect the problem scale?",o:["It reduces the qubits needed.","It increases the number of qubits required from 6 to 16.","It turns a QUBO into a classical matrix.","It strictly requires quantum annealing."],a:1,e:"Increasing complexity via multiple overlapping cars scales the required qubits rapidly, jumping from 6 qubits to 16 qubits."},
+
+  /* ── Part 4: Optimization Model Construction ── */
+  {s:"Part 4 · Building Optimization Models",p:"A learner asks how to construct correct mathematical models from real-world problems.",q:"What two core components must always be identified to construct any optimization model?",o:["Qubits and gates","Constraints and an objective function","Density matrices and eigenvalues","Sparsity and hardware type"],a:1,e:"The constraints define your allowable search space, and the objective function defines what you are trying to minimize."},
+  {s:"Part 4 · Building Optimization Models",p:"Hardware limits dictate the feasibility of solving these modeled problems at scale.",q:"If an algorithm's resource requirement scales exponentially with problem size, how is it classified?",o:["A breakthrough algorithm","A polynomial algorithm","A bad algorithm","A log-scale algorithm"],a:2,e:"An algorithm is considered 'bad' if its resource requirements scale exponentially; polynomial is acceptable, and logarithmic is a breakthrough."},
+  {s:"Part 4 · Building Optimization Models",p:"While fault-tolerant machines are the ultimate goal, NISQ algorithms still have a long-term future.",q:"What will likely happen to variational quantum algorithms when error-free, fault-tolerant machines arrive?",o:["They will be completely discarded.","They will become subroutines for fault-tolerant algorithms.","They will only run on classical computers.","They will replace Shor's algorithm."],a:1,e:"Variational algorithms have a rich history in quantum physics and will likely become powerful subroutines for future fault-tolerant algorithms rather than disappearing."},
+
+  /* ── Part 5: VQA as a Universal Framework ── */
+  {s:"Part 5 · VQA as a Universal Framework",p:"The lecture pivots to reviewing exactly how a Variational Quantum Algorithm (VQA) functions as a broader tool.",q:"Why are VQAs considered 'universal' quantum algorithms?",o:["They do not use any classical computation.","They have universal applications in combinatorial optimization, chemistry, machine learning, and numerical simulations.","They solve NP-hard problems in polynomial time perfectly.","They require infinite qubits."],a:1,e:"VQAs are conceptually universal because their framework can tackle a vast array of tasks ranging from combinatorial optimization to generative models and quantum chemistry."},
+  {s:"Part 5 · VQA as a Universal Framework",p:"The operation of a VQA requires a hybrid feedback loop.",q:"What specific role does the classical computer play in the standard VQA loop?",o:["It solely stores the final answer.","It runs the quantum gates.","It evaluates the cost function and optimizes the parameters.","It maintains the physical temperature of the qubits."],a:2,e:"The classical computer evaluates the cost function from quantum measurements and optimizes the parameters to send back to the quantum circuit."},
+  {s:"Part 5 · VQA as a Universal Framework",p:"Within the VQA family, different flavors exist to tackle these optimization loops.",q:"Which two specific variational algorithms dominated quantum computing research around 2022–2023?",o:["Shor's and Grover's","VQE and QAOA","QPE and QFT","Adiabatic and SQD"],a:1,e:"VQE (Variational Quantum Eigensolver) and QAOA (Quantum Approximate Optimization Algorithm) heavily dominated the optimization field."},
+  {s:"Part 5 · VQA as a Universal Framework",p:"These two algorithms take very different architectural approaches to the problem.",q:"How does the design of QAOA differ fundamentally from standard VQE?",o:["QAOA is problem-agnostic with many parameters.","QAOA is problem-inspired, mapping the problem directly into deep circuits with very few parameters.","QAOA requires no two-qubit gates.","QAOA is run entirely classically."],a:1,e:"QAOA is 'problem aware' and inspired, using deep circuits with very few optimization knobs, whereas standard VQE is problem-agnostic and uses shallow circuits with many knobs."},
+
+  /* ── Part 6: Hardware Bottlenecks ── */
+  {s:"Part 6 · Hardware Bottlenecks & CNOT Gates",p:"Implementing these algorithms introduces hardware limitations, especially regarding specific logic gates.",q:"Which logic gate acts as a critical bottleneck due to its operation time and negative impact on coherence?",o:["The Pauli-X gate","The Hadamard gate","The two-qubit CNOT (controlled-NOT) gate","The measurement gate"],a:2,e:"CNOT gates are critical bottlenecks because they take longer (e.g., 250 nanoseconds) relative to qubit coherence times, strictly limiting how deep circuits can go."},
+  {s:"Part 6 · Hardware Bottlenecks & CNOT Gates",p:"Because QAOA maps problems directly, it relies heavily on these specific two-qubit gates.",q:"How does the number of CNOT gates in QAOA react as the optimization problem size grows?",o:["It remains flat.","It decreases linearly.","It increases exponentially.","It fluctuates randomly."],a:2,e:"Because QAOA embeds the dense problem directly, the number of required CNOT gates increases exponentially as the problem size grows."},
+  {s:"Part 6 · Hardware Bottlenecks & CNOT Gates",p:"Standard VQE avoids this exponential gate explosion.",q:"Why does standard VQE require significantly fewer CNOT gates as problem size increases compared to QAOA?",o:["It naturally uses a 'hardware efficient ansatz' connecting only adjacent qubits.","It completely ignores the objective function.","It has zero parameters to optimize.","It uses optical instead of superconducting qubits."],a:0,e:"VQE typically employs a 'hardware efficient ansatz,' utilizing a single layer of CNOTs to connect physically neighboring qubits, preventing exponential gate growth."},
+  {s:"Part 6 · Hardware Bottlenecks & CNOT Gates",p:"To reliably evaluate these algorithms on actual hardware, multiple mappings must be tested.",q:"What is the process of mapping and decomposing the algorithmic logic onto different physical qubits on the chip called?",o:["Superposition","Annealing","Transpilation","Entanglement"],a:2,e:"Transpilation involves mapping the algorithm onto different physical qubit layouts on the chip to test robustness and gather statistically significant results."},
+  {s:"Part 6 · Hardware Bottlenecks & CNOT Gates",p:"QAOA often needs to connect qubits that are not physically touching on the chip.",q:"What gate must be heavily used when a problem Hamiltonian requires connecting two physically distant qubits?",o:["Identity gate","Phase gate","Swap gate","Measurement gate"],a:2,e:"Swap gates are required to move information between non-adjacent qubits across the chip so they can interact."},
+  {s:"Part 6 · Hardware Bottlenecks & CNOT Gates",p:"This heavy reliance on swap gates comes with a direct mathematical cost to circuit depth.",q:"How many CNOT gates are required to decompose a single swap gate?",o:["1","2","3","4"],a:2,e:"Each swap gate is decomposed into three separate CNOT gates, drastically increasing the CNOT count and the corresponding error rate."},
+
+  /* ── Part 7: Hardware Execution & Fidelity ── */
+  {s:"Part 7 · Hardware Execution & Fidelity",p:"Dr. Bhardwaj details a specific execution technique used during hardware runs to improve output accuracy.",q:"What specific technique was used to engage idle qubits and improve hardware efficiency?",o:["Quantum Phase Estimation","Dynamical decoupling","Quantum error correction","Tensor networks"],a:1,e:"Dynamical decoupling was used to engage idle qubits that weren't experiencing two-qubit gates, artificially improving result efficiency."},
+  {s:"Part 7 · Hardware Execution & Fidelity",p:"The reliability of these quantum outputs must be measured against exact classical mathematical solutions.",q:"What metric indicates how well the IBM quantum computer results matched the exact theoretical simulated results?",o:["Sparsity","Fidelity","Coherence","Amplitude"],a:1,e:"Fidelity is the metric used to verify the quality of the solution by comparing the quantum hardware's output to the exact simulation."},
+  {s:"Part 7 · Hardware Execution & Fidelity",p:"Fidelity generally trends downward under certain hardware strains.",q:"What typically happens to the fidelity of QAOA as the optimization problem complexity heavily increases?",o:["It increases to 100%.","It stays perfectly stable.","It goes down due to an exponential increase in CNOT gates.","It fluctuates based on time of day."],a:2,e:"As problem complexity grows, the number of required CNOT gates in QAOA rises exponentially, causing fidelity to inevitably go down."},
+
+  /* ── Part 8: Truck Routing & Quantum Annealing ── */
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"Dr. Bhardwaj transitions to a second distinct optimization problem utilizing different logic.",q:"What combinatorial problem involving transportation is highlighted as an escalating optimization challenge?",o:["Airline scheduling","Drone package delivery","Truck route optimization","Subway line placement"],a:2,e:"The optimization of truck routes, where each city must be reached exactly once with maximum fuel efficiency, is an escalating combinatorial challenge."},
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"Solving the truck routing problem can be tackled with a fundamentally different quantum paradigm than digital gates.",q:"What alternative quantum paradigm, described as the 'FPGAs of quantum computers,' is strictly suited for optimization?",o:["Universal digital quantum computing","Quantum annealing","Measurement-based quantum computing","Topological quantum computing"],a:1,e:"Quantum annealing is introduced as a different paradigm tailored strictly for solving optimization problems, akin to an FPGA."},
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"Dr. Bhardwaj references a specific hardware provider famous for this alternate paradigm.",q:"Which company's hardware was shown embedding a one-truck, eight-city routing problem?",o:["IBM","IonQ","D-Wave","Rigetti"],a:2,e:"The lecture highlights problem graphs directly embedded onto D-Wave hardware, a major provider of quantum annealers."},
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"Quantum annealing relies on specific natural physics principles rather than programmatic logic gates.",q:"How does the quantum annealing process fundamentally operate?",o:["By applying discrete CNOT gates in sequence.","By slowly evolving an initial Hamiltonian into the problem Hamiltonian.","By running a classical neural network on a quantum chip.","By heating the qubits to room temperature."],a:1,e:"Quantum annealing starts with an initial Hamiltonian and slowly evolves the system's magnetic fields until it becomes the problem Hamiltonian."},
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"This slow physical evolution guarantees a specific mathematical outcome if done correctly.",q:"Which physical theorem guarantees that the system remains in the ground state if the evolution is slow enough?",o:["The Adiabatic theorem","Heisenberg's Uncertainty Principle","The No-Cloning theorem","Bell's theorem"],a:0,e:"The adiabatic theorem dictates that if the system evolves slowly enough, it will remain in its ground state, eventually settling in the problem's lowest energy solution."},
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"The required speed of the annealing process is aggressively limited by the energy landscape of complex problems.",q:"As problem complexity scales up, what happens to the energy gap between the ground state and the first excited state?",o:["It increases exponentially.","It remains constant.","It decreases exponentially.","It fluctuates randomly."],a:2,e:"As problem size increases, the gap between the ground and first excited states decreases exponentially, meaning the annealing must be performed extremely slowly to avoid accidentally jumping states."},
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"Quantum annealing has a unique physical advantage over classical thermal annealing when escaping bad solutions.",q:"What phenomenon allows quantum annealing to escape local non-optimal minimums without jumping over energy barriers?",o:["Superposition","Quantum tunneling","Decoherence","Spontaneous emission"],a:1,e:"Unlike classical annealing which must 'jump' over barriers, quantum systems can tunnel directly through energy barriers to reach the optimal ground state."},
+  {s:"Part 8 · Truck Routing & Quantum Annealing",p:"Dr. Bhardwaj addresses when to choose quantum annealing versus gate-based systems for optimization.",q:"Why might one prefer digital universal computers (like IBM) over quantum annealers despite the annealers having thousands of physical qubits?",o:["Annealers cannot do math.","Digital computers allow precise control over each qubit and gate, whereas annealing is largely just 'watching' an evolution.","Annealers only work in space.","IBM computers have more physical qubits than D-Wave."],a:1,e:"Universal digital systems offer direct, precise control over each qubit and logic gate, whereas annealing provides little control beyond setting up the initial evolution."},
+
+  /* ── Part 9: Quantum Simulation ── */
+  {s:"Part 9 · Quantum Simulation & Chemistry",p:"Dr. Bhardwaj shifts topics entirely from optimization to the realm of quantum simulation.",q:"Which biological molecule is referenced as a prime motivation for quantum simulation due to its massive impact on global carbon emissions?",o:["Chlorophyll in plants","Nitrogenase enzyme converting nitrogen to ammonia in bacteria","ATP synthase","Hemoglobin"],a:1,e:"The nitrogenase enzyme's natural conversion of nitrogen into ammonia is a quantum mechanical process that, if simulated and mimicked, could eliminate the 1.4% of global carbon emissions produced by synthetic fertilizer creation."},
+  {s:"Part 9 · Quantum Simulation & Chemistry",p:"A specific quantum phenomenon is being simulated to revolutionize green energy production.",q:"What physical process, currently being researched for photovoltaic efficiency, allows one single photon to produce two charge carriers?",o:["Triplet fusion","Singlet fission","Double refraction","Photoelectric effect"],a:1,e:"Singlet fission is a process where one photon can generate two distinct charge carriers, potentially boosting solar cell outputs significantly."},
+  {s:"Part 9 · Quantum Simulation & Chemistry",p:"Simulating molecular interactions is also highly relevant for pharmaceutical applications.",q:"What spectroscopy technique is being simulated to aid drug discovery by identifying specific atomic structures?",o:["Mass Spectrometry","X-ray Crystallography","Nuclear Magnetic Resonance (NMR) spectra","Raman Spectroscopy"],a:2,e:"Dr. Bhardwaj works on simulating NMR spectra to accurately pinpoint atomic structures crucial for predicting drug binding sites."},
+  {s:"Part 9 · Quantum Simulation & Chemistry",p:"Traditional classical NMR relies on extreme physical conditions.",q:"What is a major commercial goal for simulating and optimizing NMR through quantum methods?",o:["To perform NMR at zero or low magnetic fields (e.g., table-top devices).","To increase the magnetic field requirement to 100 Tesla.","To use it to compress classical image data.","To replace all classical MRI machines with quantum computers."],a:0,e:"Achieving high-resolution NMR at zero or low magnetic fields (like one Tesla) would allow for table-top NMR devices, revolutionizing the spectroscopy industry."},
+  {s:"Part 9 · Quantum Simulation & Chemistry",p:"Alongside NMR and Singlet Fission, material superconductivity is a prime simulation target.",q:"What temperature threshold would be considered a breakthrough 'game changer' for high-temperature superconductors?",o:["0 Kelvin","100 Kelvin","273 Kelvin (Room Temperature)","500 Kelvin"],a:2,e:"Achieving zero electrical resistance (superconductivity) at room temperature (around 273 Kelvin) would be a massive energy breakthrough."},
+
+  /* ── Part 10: Trotterization, SQD & Outlook ── */
+  {s:"Part 10 · Trotterization, SQD & Strategic Outlook",p:"To actually perform these quantum simulations on current hardware, specific numerical algorithms are leveraged.",q:"What specific simulation method is described as one of the top five sensible things you can do on current NISQ hardware?",o:["Grover's Search","Trotterization","Fast Fourier Transform","Monte Carlo tree search"],a:1,e:"Trotterization is an actively used method for simulating time evolution (e^(−iHt)) that can successfully run on current NISQ devices, directly competing with classical algorithms."},
+  {s:"Part 10 · Trotterization, SQD & Strategic Outlook",p:"Evaluating this simulation data requires strong initial setups.",q:"When using Trotterization for NMR, what dictates the quality of the resulting simulated spectra?",o:["The color of the laser.","How clearly defined the initial magnetization dynamics are.","The physical weight of the molecule.","The temperature of the classical computer."],a:1,e:"Getting a really good spectra heavily relies on having clear, well-defined magnetization dynamics during the simulation."},
+  {s:"Part 10 · Trotterization, SQD & Strategic Outlook",p:"Beyond standard VQE, a newer state-of-the-art technique is being used to find molecular properties with less gate depth.",q:"What is the method that strictly measures bit strings on the quantum hardware and offloads expectation value estimation entirely to a classical computer?",o:["Standard QAOA","Sampling Quantum Diagonalization (SQD)","Shor's algorithm","Quantum Phase Estimation"],a:1,e:"Sampling Quantum Diagonalization (SQD) utilizes the quantum computer purely for sampling bit strings, leaving all complex expectation value calculations to the classical computer."},
+  {s:"Part 10 · Trotterization, SQD & Strategic Outlook",p:"SQD is powerful for current hardware but comes with a distinct mathematical limitation.",q:"What is the primary caveat of Sampling Quantum Diagonalization?",o:["It requires millions of logical qubits.","The true ground state must reside within the specific subspace of samples collected.","It can only simulate classical Newtonian physics.","It cannot measure bit strings."],a:1,e:"For SQD to successfully identify the ground state, the true ground state must mathematically exist within the subspace of the collected classical samples; otherwise, it fails completely."},
+  {s:"Part 10 · Trotterization, SQD & Strategic Outlook",p:"Dr. Bhardwaj concludes with overarching thoughts on the maturity of different quantum disciplines.",q:"Which quantum computing domain does Dr. Bhardwaj consider more mature and naturally fitting for near-term NISQ hardware?",o:["Financial portfolio optimization","Quantum optimization","Quantum simulation","Cryptography breaking"],a:2,e:"Because simulation mathematically maps quantum mechanics natively to quantum hardware, it is currently far more mature and beneficial on near-term hardware compared to optimization."},
+  {s:"Part 10 · Trotterization, SQD & Strategic Outlook",p:"Wrapping up the lecture, a practical strategy for attacking novel optimization problems is advised based on problem scope.",q:"If an optimization problem's solution is suspected to lie in a small, identifiable space, which algorithmic approach is recommended first to avoid barren plateaus?",o:["Start with QAOA to explore all space.","Use SQD (sampling) first, throw the bit strings to a classical HPC, then evaluate.","Only run VQE with a deep circuit.","Ignore quantum and use a calculator."],a:1,e:"If the relevant space is small, the recommended approach is to do sampling (SQD) first, map the strings to a classical high-performance computer (HPC), and evaluate, avoiding the heavy depth and barren plateau risks of deep VQE circuits."},
+];
+
+let qi=0,step='intro',score=0,answered=0;
+const slot=document.getElementById('slot'),fill=document.getElementById('prog-fill'),barLbl=document.getElementById('bar-label'),scorEl=document.getElementById('score-tag');
+
+function updateBar(){
+  fill.style.width=(answered/50*100)+'%';
+  scorEl.textContent=score+' / 50';
+  barLbl.textContent=step==='intro'?'Adv VQA · Part 3':step==='summary'?'Complete':`Q${qi+1} of 50`;
+}
+function swap(fn){
+  const cur=slot.firstChild;
+  if(cur){cur.classList.add('out');setTimeout(()=>{slot.innerHTML='';fn();},220);}
+  else fn();
+}
+function showIntro(){
+  step='intro';updateBar();
+  const d=document.createElement('div');d.className='intro';
+  d.innerHTML=`
+    <div class="intro-tag">Module 07 · 50 Questions</div>
+    <h1>Advanced VQA —<br><em>Part 3: Chemistry &amp; Industrial Applications</em></h1>
+    <p>From EV charging station optimization and QUBO matrices through truck routing, quantum annealing, molecular simulation, Trotterization, and SQD.</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn" onclick="startQuiz()">Begin <span class="arr">→</span></button>
+    </div>`;
+  slot.appendChild(d);
+}
+function startQuiz(){qi=0;score=0;answered=0;swap(()=>showPreview());}
+function showPreview(){
+  step='preview';updateBar();
+  const d=document.createElement('div');d.className='card';
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot preview-dot"></span>
+      <span class="card-kind preview-kind">Preview</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    <div class="section-label">${data[qi].s}</div>
+    <div class="preview-body">${data[qi].p}</div>
+    <div class="btn-row"><button class="btn" onclick="swap(showQuestion)">Question <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+function showQuestion(){
+  step='question';updateBar();
+  const item=data[qi];
+  const d=document.createElement('div');d.className='card';
+  const optHtml=item.o.map((o,oi)=>`<button class="option" id="opt${oi}" onclick="pick(${oi})"><span class="opt-letter">${L[oi]}</span><span>${o}</span></button>`).join('');
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot question-dot"></span>
+      <span class="card-kind question-kind">Question ${qi+1} of 50</span>
+    </div>
+    <div class="question-body">${item.q}</div>
+    <div class="options">${optHtml}</div>`;
+  slot.appendChild(d);
+}
+function pick(oi){
+  const item=data[qi];
+  document.querySelectorAll('.option').forEach(b=>b.disabled=true);
+  const correct=item.a;
+  document.querySelectorAll('.option')[correct].classList.add(oi===correct?'opt-correct':'opt-reveal');
+  if(oi!==correct) document.querySelectorAll('.option')[oi].classList.add('opt-wrong');
+  setTimeout(()=>swap(()=>showResult(oi)),480);
+}
+function showResult(oi){
+  const item=data[qi];const ok=oi===item.a;
+  if(ok)score++;answered++;step='result';updateBar();
+  const d=document.createElement('div');d.className='card';
+  const dotCls=ok?'result-dot-correct':'result-dot-wrong';
+  const kindCls=ok?'result-kind-correct':'result-kind-wrong';
+  let rowsHtml=`<div class="chosen-row ${ok?'correct':'wrong'}"><span class="row-icon">${ok?'✓':'✗'}</span><span>${item.o[oi]}</span></div>`;
+  if(!ok) rowsHtml+=`<div class="chosen-row reveal"><span class="row-icon">✓</span><span><strong>Correct:</strong> ${item.o[item.a]}</span></div>`;
+  const isLast=qi===49;
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot ${dotCls}"></span>
+      <span class="card-kind ${kindCls}">${ok?'Correct!':'Incorrect'}</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    ${rowsHtml}
+    <div class="exp-wrap">
+      <div class="exp-label">Explanation</div>
+      <div class="exp-text">${item.e}</div>
+    </div>
+    <div class="btn-row"><button class="btn" onclick="advance()">${isLast?'See Results':'Next'} <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+function advance(){
+  if(qi===49){swap(showSummary);return;}
+  qi++;swap(showPreview);
+}
+function showSummary(){
+  step='summary';updateBar();
+  const pct=Math.round(score/50*100);
+  const msgs=[
+    [80,"Outstanding. From QUBO matrices and D-Wave annealing to singlet fission and SQD — you have mastered the full industrial and chemistry application layer of VQAs."],
+    [60,"Excellent work. The core pipeline from QUBO to Ising Hamiltonian and the annealing mechanics are solid. Revisit Parts 9–10 on simulation and SQD on your next pass."],
+    [40,"Good progress. Focus on the quantum annealing section (Part 8) and the simulation applications (Part 9) — the physical intuition is the key to this module."],
+    [20,"A solid start. Return to the EV charging problem first — tracing how a real-world scenario becomes a QUBO matrix is the anchor concept for everything that follows."],
+    [-1,"This module is wide-ranging and applied. Take it one section at a time and connect each real-world problem to its quantum formulation — it will all click with repetition."]
+  ];
+  const msg=msgs.find(([t])=>pct>t)[1];
+  const d=document.createElement('div');d.className='summary';
+  d.innerHTML=`
+    <div class="sum-tag">Module 07 Complete · Adv VQA Part 3</div>
+    <div class="sum-score">${score}<span>/50</span></div>
+    <div class="sum-pct">${pct}% correct</div>
+    <div class="sum-msg">${msg}</div>
+    <div class="sum-btns">
+      <a class="btn-home" href="index.html">← All Modules</a>
+      <button class="btn-reset" onclick="swap(showIntro)">↺ Retake</button>
+    </div>`;
+  slot.appendChild(d);
+}
+showIntro();
+</script>
+</body>
+</html>
