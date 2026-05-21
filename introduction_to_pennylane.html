@@ -363,7 +363,7 @@ function checkAnswer(){
   const rev=document.getElementById('code-reveal');
   const item=data[qi];
   const val=ta.value;
-  const ok=checkCode(val.trim(),item.ans);
+  const ok=checkCode(val.trim(),item.ans.trim()?item.ans:[]);
   codeChecked=true;
   codeCorrect=ok;
   btn.disabled=true;
