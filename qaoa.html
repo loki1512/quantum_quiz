@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QAOA & Quantum Optimization — Quantum Professor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050a12; --surface:#0a1525; --border:#1a3050;
+    --accent:#2dd4bf; --accent-dim:#0f766e; --gold:#f0c040;
+    --green:#39e07a; --red:#ff5566;
+    --text:#c8dff0; --text-dim:#6a8aaa; --text-bright:#e8f4ff;
+    --mono:'Space Mono',monospace; --serif:'Crimson Pro',Georgia,serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:18px;line-height:1.7;min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center}
+
+  .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(45,212,191,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(45,212,191,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+  .bg-glow{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(130px)}
+  .bg-glow-1{width:700px;height:700px;background:radial-gradient(circle,rgba(15,118,110,.14),transparent 70%);top:-250px;left:-250px}
+  .bg-glow-2{width:500px;height:500px;background:radial-gradient(circle,rgba(45,212,191,.07),transparent 70%);bottom:0;right:-150px;animation:bgPulse 9s ease-in-out infinite alternate}
+  @keyframes bgPulse{from{opacity:.5}to{opacity:1}}
+
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,10,18,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:11px 28px;display:flex;align-items:center;gap:16px}
+  .home-btn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:2px;white-space:nowrap;transition:all .15s;flex-shrink:0}
+  .home-btn:hover{color:var(--accent);border-color:rgba(45,212,191,.4)}
+  .bar-label{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;min-width:120px}
+  .progress-track{flex:1;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px rgba(45,212,191,.5)}
+  .score-tag{font-family:var(--mono);font-size:10px;color:var(--gold);white-space:nowrap;min-width:55px;text-align:right}
+
+  .stage{position:relative;z-index:1;width:100%;max-width:660px;padding:110px 24px 60px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:36px 36px 28px;animation:cardIn .32s cubic-bezier(.4,0,.2,1)}
+  @keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .card.out{animation:cardOut .22s cubic-bezier(.4,0,.2,1) forwards}
+  @keyframes cardOut{to{opacity:0;transform:translateY(-14px)}}
+
+  .card-header{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .card-kind{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+  .card-num{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto}
+
+  .preview-dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .preview-kind{color:var(--accent)}
+  .section-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);opacity:.6;margin-bottom:10px}
+  .preview-body{font-family:var(--serif);font-size:1.08rem;font-style:italic;color:var(--text);line-height:1.75;margin-bottom:28px}
+
+  .question-dot{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+  .question-kind{color:var(--gold)}
+  .question-body{font-family:var(--serif);font-size:1.1rem;color:var(--text-bright);line-height:1.65;margin-bottom:22px}
+
+  .options{display:flex;flex-direction:column;gap:9px;margin-bottom:6px}
+  .option{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:transparent;color:var(--text);font-family:var(--serif);font-size:.97rem;text-align:left;line-height:1.5;width:100%;transition:border-color .14s,background .14s,color .14s}
+  .option:hover:not(:disabled){border-color:rgba(45,212,191,.5);background:rgba(45,212,191,.05);color:var(--text-bright)}
+  .option:disabled{cursor:default}
+  .opt-letter{font-family:var(--mono);font-size:10px;color:var(--text-dim);border:1px solid var(--border);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:2px;transition:all .14s}
+  .option:hover:not(:disabled) .opt-letter{border-color:var(--accent);color:var(--accent)}
+  .option.opt-correct{border-color:var(--green);background:rgba(57,224,122,.09);color:var(--text-bright)}
+  .option.opt-correct .opt-letter{border-color:var(--green);color:var(--green);background:rgba(57,224,122,.15)}
+  .option.opt-wrong{border-color:var(--red);background:rgba(255,85,102,.09);color:var(--text-bright)}
+  .option.opt-wrong .opt-letter{border-color:var(--red);color:var(--red);background:rgba(255,85,102,.15)}
+  .option.opt-reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.04)}
+  .option.opt-reveal .opt-letter{border-color:var(--green);color:var(--green)}
+
+  .result-dot-correct{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .result-dot-wrong{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .result-kind-correct{color:var(--green)}
+  .result-kind-wrong{color:var(--red)}
+  .chosen-row{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:4px;border:1px solid;margin-bottom:12px;font-family:var(--serif);font-size:.97rem;line-height:1.5}
+  .chosen-row.correct{border-color:var(--green);background:rgba(57,224,122,.08);color:var(--text-bright)}
+  .chosen-row.wrong{border-color:var(--red);background:rgba(255,85,102,.08);color:var(--text-bright)}
+  .chosen-row.reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.05);color:var(--text-bright)}
+  .row-icon{flex-shrink:0;font-size:.95rem;margin-top:1px}
+  .exp-wrap{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+  .exp-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .exp-label::before{content:'◉'}
+  .exp-text{font-size:.93rem;color:var(--text);font-style:italic;line-height:1.65}
+
+  .btn-row{display:flex;justify-content:flex-end;margin-top:26px}
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:11px 24px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:8px}
+  .btn:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(45,212,191,.35)}
+  .btn .arr{transition:transform .18s}
+  .btn:hover .arr{transform:translateX(4px)}
+
+  .intro{text-align:center;animation:cardIn .35s ease}
+  .intro-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px}
+  .intro-tag::before,.intro-tag::after{content:'';display:block;width:28px;height:1px;background:var(--accent)}
+  .intro h1{font-family:var(--serif);font-weight:300;font-size:clamp(1.9rem,5vw,3rem);color:var(--text-bright);line-height:1.2;margin-bottom:14px;letter-spacing:-.01em}
+  .intro h1 em{color:var(--accent);font-style:normal;font-weight:600}
+  .intro p{font-size:.9rem;color:var(--text-dim);font-family:var(--mono);margin-bottom:36px;line-height:1.7;max-width:420px;margin-left:auto;margin-right:auto}
+
+  .summary{text-align:center;animation:cardIn .4s ease}
+  .sum-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+  .sum-score{font-family:var(--serif);font-weight:300;font-size:clamp(3.5rem,12vw,5.5rem);color:var(--text-bright);line-height:1;margin-bottom:6px}
+  .sum-score span{color:var(--accent)}
+  .sum-pct{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:28px}
+  .sum-msg{font-size:1.03rem;font-style:italic;color:var(--text);line-height:1.7;max-width:440px;margin:0 auto 36px}
+  .sum-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn-reset{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .2s}
+  .btn-reset:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(45,212,191,.35)}
+  .btn-home{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:3px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+  .btn-home:hover{border-color:var(--text-dim);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="topbar">
+  <a class="home-btn" href="index.html">← Home</a>
+  <div class="bar-label" id="bar-label">QAOA & Optimization</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  <div class="score-tag" id="score-tag">0 / 50</div>
+</div>
+
+<div class="stage"><div id="slot"></div></div>
+
+<script>
+const L=['A','B','C','D'];
+const data=[
+  /* ── Part 1: Optimization Basics ── */
+  {s:"Part 1 · Optimization Basics & Problem Definition",p:"Optimization problems require us to select the best choice from a given set of options. Combinatorial optimization is a specific subcategory.",q:"What distinguishes combinatorial optimization from general optimization?",o:["It searches through an infinite, continuous set of options.","It has a finite set of discrete objects or paths to choose from.","It only applies to problems involving time minimization.","It can only be solved using quantum computers."],a:1,e:"Combinatorial optimization problems have a finite set of objects or paths that you can optimize from, such as choosing a route, unlike problems with an infinite or continuous set of options."},
+  {s:"Part 1 · Optimization Basics & Problem Definition",p:"When classical computers attempt to solve combinatorial problems by checking every possible solution, they use a specific approach.",q:"What is the term for trying every possible option to find the best solution?",o:["Heuristic search","Variational search","Brute force","Interference"],a:2,e:"Trying all options is known as a brute force approach, which becomes impossible for classical computers as the search space grows excessively large."},
+  {s:"Part 1 · Optimization Basics & Problem Definition",p:"Real-world scheduling and routing present massive computational challenges. The lecture highlights a famous combinatorial problem.",q:"Which of the following is a classic example of a combinatorial optimization problem?",o:["Calculating the trajectory of a rocket","The Traveling Salesman Problem","Predicting continuous weather patterns","Calculating the derivative of a continuous function"],a:1,e:"The Traveling Salesman Problem, along with portfolio optimization and scheduling, is a known category of combinatorial optimization problems."},
+  {s:"Part 1 · Optimization Basics & Problem Definition",p:"Quantum computers leverage the fundamental properties of quantum mechanics to perform optimization differently than classical computers.",q:"What are the three core properties of quantum mechanics relied upon for quantum optimization?",o:["Superposition, entanglement, and interference","Gravity, electromagnetism, and strong force","Amplitude, frequency, and phase","Superposition, reflection, and refraction"],a:0,e:"Quantum optimization relies directly on superposition, entanglement, and interference to solve complex problems."},
+  {s:"Part 1 · Optimization Basics & Problem Definition",p:"In any optimization problem, we need a mathematical way to determine how 'good' a particular solution is.",q:"What is the mathematical construct that takes in a possible solution and outputs a score or cost?",o:["A unitary matrix","An objective function","A Fourier transform","A candidate bitstring"],a:1,e:"An objective function maps a given solution (like a route) to a score (like time or cost) to tell us how good the solution is."},
+  {s:"Part 1 · Optimization Basics & Problem Definition",p:"Optimization problems often seek to minimize a cost, such as travel time. However, sometimes we want to maximize a value, like profit.",q:"How do we convert a maximization problem into a minimization problem mathematically?",o:["By squaring the objective function","By applying a Hadamard transform","By adding a minus sign to the objective function","By dividing the objective function by two"],a:2,e:"If the problem is a maximization problem, we simply add a minus sign and pose it as a minimization problem."},
+
+  /* ── Part 2: Max-XOR-SAT ── */
+  {s:"Part 2 · The Max-XOR-SAT Problem",p:"The lecture introduces a specific, difficult problem called Max-XOR-SAT, which consists of binary linear equations.",q:"In the context of Max-XOR-SAT, what does 'modulo 2' arithmetic mean?",o:["Every number is multiplied by 2.","Values reset back to zero when they reach two.","The output must always equal 2.","The algorithm takes 2 steps to run."],a:1,e:"Modulo 2 means that the sum resets back to zero every time it hits two, similar to how an analog clock resets at 12."},
+  {s:"Part 2 · The Max-XOR-SAT Problem",p:"Max-XOR-SAT involves finding a specific set of variables that satisfy the most conditions possible.",q:"What is the ultimate goal when solving the Max-XOR-SAT problem?",o:["To find a vector x that maximizes the number of satisfied constraints.","To find a vector x that minimizes the output values to zero.","To convert all zeros to ones in the constraint matrix.","To ensure all constraints output a value of 2."],a:0,e:"The goal is to find the vector x (the x₀, x₁, x₂, etc.) that maximizes the number of satisfied linear constraints."},
+  {s:"Part 2 · The Max-XOR-SAT Problem",p:"A classical brute force method for Max-XOR-SAT involves checking lists of ones and zeros.",q:"What do we call the rows of inputs (combinations of zeros and ones) tested during the classical solution process?",o:["Unitary paths","Hamiltonian states","Candidate bit strings","Modulo vectors"],a:2,e:"The combinations of binary inputs being tested are called candidate bit strings."},
+  {s:"Part 2 · The Max-XOR-SAT Problem",p:"Once outputs are calculated for candidate bit strings in Max-XOR-SAT, they must be evaluated to find the best solution.",q:"How is the final 'score' for a candidate bit string determined in Max-XOR-SAT?",o:["By multiplying all the outputs together.","By comparing the computed output column to the target vector V and summing the matches.","By transforming the output into Fourier space.","By selecting the string with the highest total numerical sum."],a:1,e:"To score a candidate, its computed output column is compared to the target vector V; the total number of matching bits determines the number of constraints satisfied."},
+  {s:"Part 2 · The Max-XOR-SAT Problem",p:"For small problems, we can write a quick Python script or even solve the problem by hand.",q:"Why do we need quantum computers or advanced algorithms if we can solve Max-XOR-SAT classically?",o:["Classical exact solutions take too long for very large sets of options.","Classical computers cannot perform modulo 2 math.","Quantum computers are always inherently faster for every type of math.","Python cannot handle binary variables."],a:0,e:"Classical exact solutions work fine for small problems, but as the problem scales and the options grow, they take too much time."},
+
+  /* ── Part 3: Classical Heuristics & Local Optima ── */
+  {s:"Part 3 · Classical Heuristics & Local Optima",p:"Because exact brute force takes too long, classical computer scientists developed heuristic algorithms, such as Genetic Algorithms.",q:"What is a defining characteristic of heuristic solutions like Genetic Algorithms?",o:["They always guarantee the absolute best solution.","They provide approximations and may miss the true global optimum.","They use quantum interference to test all paths simultaneously.","They are slower than brute force but highly accurate."],a:1,e:"Heuristics and approximations can be faster for big problems but do not guarantee finding the absolute best solution, as they might miss narrow peaks."},
+  {s:"Part 3 · Classical Heuristics & Local Optima",p:"When an algorithm is searching a 'landscape' of possible solutions, it might climb to the top of a peak that looks optimal but isn't the highest overall.",q:"What is the term for a solution that is better than its immediate neighbors but is not the absolute best overall solution?",o:["Ground state","Global optimum","Local optimum","True peak"],a:2,e:"Getting stuck in a peak that is not the highest overall means the algorithm has been trapped in a local optimum rather than the global optimum."},
+  {s:"Part 3 · Classical Heuristics & Local Optima",p:"Quantum computers present an alternative approach to combinatorial optimization, but they require critical thinking regarding their application.",q:"According to the lecture, what is a crucial caveat about using quantum computers for optimization?",o:["They completely replace classical computers.","They are always faster than classical computers for all tasks.","They are not faster for everything, and sometimes the goal is simply finding the absolute best solution rather than just speed.","They can only solve problems with infinite search spaces."],a:2,e:"Quantum computers are not always faster or better; sometimes the goal is simply to secure the absolute best solution, and they must be used critically alongside classical computers."},
+
+  /* ── Part 4: Hamiltonians & Ground States ── */
+  {s:"Part 4 · Hamiltonians & Ground States",p:"To solve optimization problems on a quantum computer, we use concepts from physics to encode the mathematical problem.",q:"What is a Hamiltonian in the context of quantum physics?",o:["An algorithm for gradient descent.","A mathematical operator that helps us understand the total energy of a system.","A classical heuristic algorithm.","A type of noise-canceling wave."],a:1,e:"A Hamiltonian is a mathematical operator that dictates the total energy of a system, giving us a landscape we can map to a cost function."},
+  {s:"Part 4 · Hamiltonians & Ground States",p:"Systems in nature naturally seek out stability. The lecture uses two magnets as an analogy for interacting physical systems.",q:"When opposite poles of two magnets are allowed to attract and stick together, what state does the system enter?",o:["Maximum energy state","A local optimum","A highly unstable state","The lowest energy state"],a:3,e:"When opposite poles attract and sit together, the system is highly stable and reaches its lowest energy state."},
+  {s:"Part 4 · Hamiltonians & Ground States",p:"We map our objective function to the Hamiltonian so the quantum computer can physically search for the optimal solution.",q:"What specific state of the Hamiltonian corresponds to our optimal optimization solution?",o:["The ground state","The excited state","The interference state","The superposition state"],a:0,e:"We encode our optimal solution as the ground state, which represents the lowest possible energy of the Hamiltonian."},
+  {s:"Part 4 · Hamiltonians & Ground States",p:"A physical analogy of finding a minimal solution involves a ping-pong ball on a curved surface.",q:"How does a ping-pong ball on a cloth represent finding the ground state?",o:["It bounces to the highest peak randomly.","It will naturally try to roll to the bottom of the cloth, representing the minimal energy state.","It spins in circles to simulate modulo 2 math.","It gets stuck on the flat surface."],a:1,e:"Dropping a ping-pong ball on a cloth causes it to roll to the bottom, representing how a quantum system naturally evolves toward its ground state or optimal solution."},
+
+  /* ── Part 5: Adiabatic Optimization ── */
+  {s:"Part 5 · Adiabatic Optimization",p:"Adiabatic optimization is a traditional quantum technique for finding the ground state of complex problems.",q:"How does adiabatic optimization begin the computational process?",o:["By starting with the exact complex problem and applying brute force.","By starting with a basic Hamiltonian representing a very simple problem with a known ground state.","By shaking the system vigorously to jump out of local minima.","By immediately applying a Hadamard transform."],a:1,e:"Adiabatic optimization starts with a very simple shape or basic Hamiltonian where the ground state is obvious, and then modifies it."},
+  {s:"Part 5 · Adiabatic Optimization",p:"During adiabatic optimization, the Hamiltonian is modified to slowly match the actual complex problem we want to solve.",q:"What happens if the Hamiltonian is evolved or modified too suddenly?",o:["The quantum state collapses into a pure superposition.","The system finds the global optimum instantly.","The 'ping-pong ball' jumps out of the minimal state and may land in a local, non-optimal solution.","The quantum computer crashes."],a:2,e:"Evolving the Hamiltonian too drastically or not smoothly causes the system to jump out of the ground state and land on incorrect, local minima."},
+  {s:"Part 5 · Adiabatic Optimization",p:"While theoretically sound, adiabatic optimization faces severe practical limitations on current physical quantum hardware.",q:"What is the primary catch or drawback to evolving a Hamiltonian very slowly in adiabatic optimization?",o:["It violates modulo 2 logic.","The slow steps take too much time, allowing noise to ruin the quantum computer's calculation.","It requires too many continuous parameters to be stored on classical memory.","It automatically flips the maximization problem."],a:1,e:"Slow evolution requires many steps and takes a lot of time, which allows system noise to overwhelm and ruin the correct answer on current quantum computers."},
+  {s:"Part 5 · Adiabatic Optimization",p:"The speaker recounts a personal story of trying to solve a complex optimization problem on early quantum hardware during her master's degree.",q:"What happened when the speaker tried to scale her problem to 8 nodes on the available quantum computer?",o:["The quantum computer solved it faster than a classical computer.","The problem failed to solve correctly due to the high noise in the hardware at the time.","The computer ran out of memory.","The algorithm automatically generated a heuristic approximation."],a:1,e:"Scaling the problem to 8 nodes failed because early quantum computers had a lot of noise and couldn't provide a good exact answer for that size."},
+
+  /* ── Part 6: QAOA Basics ── */
+  {s:"Part 6 · QAOA Basics",p:"QAOA was introduced as a variational algorithm to overcome some of the strict hardware limitations of slow adiabatic evolution.",q:"What does QAOA stand for?",o:["Quantum Adiabatic Optimization Algorithm","Quantum Approximate Optimization Algorithm","Quantum Amplitude Objective Algorithm","Quantum Analytical Ordering Algorithm"],a:1,e:"QAOA stands for Quantum Approximate Optimization Algorithm."},
+  {s:"Part 6 · QAOA Basics",p:"QAOA functions by applying sequences of gates that act as different 'shapes' or Hamiltonians to guide the system.",q:"QAOA works by interleaving two specific types of Hamiltonians. What are they?",o:["A local Hamiltonian and a global Hamiltonian","A classical Hamiltonian and a quantum Hamiltonian","A cost Hamiltonian and a mixer Hamiltonian","An amplitude Hamiltonian and a phase Hamiltonian"],a:2,e:"QAOA interleaves templates representing a cost Hamiltonian (based on the problem) and a mixer Hamiltonian."},
+  {s:"Part 6 · QAOA Basics",p:"The mixer Hamiltonian plays a specific, vital role in QAOA's ability to explore the landscape.",q:"What is the purpose of the mixer Hamiltonian in QAOA?",o:["To encode the objective function directly.","To shake things up and reduce the probability of getting stuck in a local minimum.","To measure the final bitstring.","To convert the maximization problem to a minimization problem."],a:1,e:"The mixer Hamiltonian 'shakes things a little bit' to help explore the solution space and avoid getting trapped in local minima."},
+  {s:"Part 6 · QAOA Basics",p:"The mathematical foundation of the gates used in QAOA relies on special types of matrices.",q:"What property defines a unitary matrix used in quantum computing gates?",o:["Multiplying it by its conjugate transpose results in the identity matrix.","Its elements sum to zero.","It contains only ones and zeros.","It cannot be decomposed into smaller gates."],a:0,e:"Unitary matrices are defined such that when multiplied by their adjoint (conjugate transpose), they yield the identity matrix."},
+  {s:"Part 6 · QAOA Basics",p:"We use large unitary matrices in mathematical theory, but they look different when run on actual quantum hardware.",q:"How are large unitary matrices implemented practically on a quantum computer?",o:["They are run entirely on classical CPUs.","They are drawn as a single infinite loop.","They are decomposed into smaller quantum gates.","They are replaced by heuristic genetic algorithms."],a:2,e:"Large unitary blocks in mathematical theory are eventually decomposed into smaller, practical quantum gates to run on a computer."},
+
+  /* ── Part 7: Variational Algorithms & Parameters ── */
+  {s:"Part 7 · Variational Algorithms & Parameters",p:"QAOA is classified as a 'variational algorithm,' which means it pairs a quantum computer with a classical computer loop.",q:"What makes an algorithm 'variational'?",o:["It operates with zero variables.","It runs a sequence, gets an output, and uses a classical optimizer to iteratively update parameters before running again.","It changes the core problem definition in every iteration.","It only uses genetic approximations to find parameters."],a:1,e:"Variational algorithms iteratively vary things one step at a time, running the gates to get a cost, computing new parameters (like α and γ), and rerunning the quantum circuit."},
+  {s:"Part 7 · Variational Algorithms & Parameters",p:"In QAOA, the unitaries for the cost and mixer Hamiltonians depend on tunable values.",q:"What are the variables α (alpha) and γ (gamma) in the context of QAOA?",o:["They represent the final bitstrings of the solution.","They are tunable parameters optimized to minimize the cost function.","They define the hardware noise limits.","They are the names of specific quantum hardware nodes."],a:1,e:"Alpha and gamma are parameters within the unitaries that the classical optimizer tweaks to find the setup that minimizes the cost function."},
+  {s:"Part 7 · Variational Algorithms & Parameters",p:"Once the quantum computer measures a state, the variational algorithm needs to decide how to adjust the parameters α and γ for the next run.",q:"What mathematical tool is typically used by the classical part of the algorithm to figure out the next set of parameters?",o:["Modulo 2 division","A Hamiltonian operator","A gradient","A Hadamard transform"],a:2,e:"The classical part of the algorithm uses a gradient to compute and suggest the next best set of parameters to try to lower the cost."},
+
+  /* ── Part 8: Quantum Interference ── */
+  {s:"Part 8 · Quantum Interference",p:"While traditional tools like QAOA and adiabatic optimization are essential, newer quantum tools heavily rely on wave mechanics.",q:"What is the underlying physical phenomenon that allows waves to combine or cancel out in quantum algorithms?",o:["Entanglement","Adiabatic evolution","Quantum interference","Brute forcing"],a:2,e:"Quantum interference allows probability waves to interact, constructively augmenting or destructively canceling each other."},
+  {s:"Part 8 · Quantum Interference",p:"To explain interference, the lecture compares it to a common consumer electronics technology.",q:"What everyday technology perfectly illustrates destructive interference?",o:["Microwave ovens","Noise-canceling headphones","Analog clocks","Genetic algorithms"],a:1,e:"Noise-canceling headphones add extra frequencies that destructively interfere with outside noise to cancel it out."},
+  {s:"Part 8 · Quantum Interference",p:"When two waves align perfectly in phase within a quantum computer, their interaction leads to a specific outcome.",q:"What is it called when two waves align and their amplitudes augment each other?",o:["Destructive interference","Constructive interference","Amplitude decay","Modular arithmetic"],a:1,e:"Constructive interference occurs when waves constructively combine, making the resulting wave bigger or more probable."},
+  {s:"Part 8 · Quantum Interference",p:"The ultimate objective in a modern quantum optimization algorithm is not just to find the answer but to make it visible upon measurement.",q:"How do modern algorithms use interference to solve problems?",o:["By engineering the algorithm to amplify the probability of getting the right answer and cancel incorrect ones.","By stopping the quantum computer halfway through its run.","By destroying all possible answers so only the user input remains.","By slowing down the clock speed of the processor."],a:0,e:"Quantum computing algorithms are engineered to amplify the probability of sampling the correct answer while canceling out the wrong ones through interference."},
+
+  /* ── Part 9: Shots & Amplitude Encoding ── */
+  {s:"Part 9 · Shots & Amplitude Encoding",p:"Because quantum computers output a probability distribution, we cannot just run the algorithm once and expect a definitive statistical answer.",q:"What do we call the repeated executions of a quantum circuit used to build a probability distribution?",o:["Shots","Hamiltonians","Unitaries","Gradients"],a:0,e:"Running the quantum state measurement several times (e.g., three, five, or a thousand times) to sample a distribution is called running 'shots'."},
+  {s:"Part 9 · Shots & Amplitude Encoding",p:"Data mapping is critical. Instead of representing data simply as binary gate inputs, we can encode it into the continuous properties of the quantum state itself.",q:"What is amplitude encoding?",o:["Changing the physical voltage of the quantum computer.","Storing data not via ones and zeros with gates, but inside the probability amplitudes of the quantum state.","Expanding the search space to infinite variables.","Using classical sound waves to program the hardware."],a:1,e:"Amplitude encoding involves storing data directly as the probability amplitudes of the quantum state, rather than just using standard gate operations."},
+  {s:"Part 9 · Shots & Amplitude Encoding",p:"While amplitude encoding is powerful, it is not always a perfect solution for every problem due to resource limits.",q:"What is a major disadvantage of general amplitude encoding?",o:["It can only encode negative numbers.","It has a very high computational cost and complex math if applied blindly.","It destroys superposition instantly.","It only works for maximization problems."],a:1,e:"The math and computational cost of arbitrary amplitude embedding can be very high, making it hard to execute efficiently."},
+
+  /* ── Part 10: Hadamard Transform & Fourier Space ── */
+  {s:"Part 10 · Hadamard Transform & Fourier Space",p:"A fundamental tool added to the quantum toolkit completely shifts the basis of how we view our quantum state.",q:"What is the direct effect of applying a Hadamard transform to a starting zero state?",o:["It returns the system to the ground state.","It converts all zeros into ones.","It creates a uniform superposition with an equal probability amplitude across all states.","It performs a measurement on the qubits."],a:2,e:"The Hadamard transform creates a uniform superposition by applying Hadamards everywhere, giving an equal 0.5 probability amplitude to all states."},
+  {s:"Part 10 · Hadamard Transform & Fourier Space",p:"When we look at standard bitstrings (zeros and ones), we are in what the lecturer calls 'direct space'.",q:"Where does the Hadamard transform mathematically move our perspective into?",o:["Hamiltonian space","Fourier space (frequency space)","Adiabatic space","Gradient space"],a:1,e:"Applying the Hadamard transform moves the mathematical representation out of direct space and into Fourier space, where we look at frequencies."},
+  {s:"Part 10 · Hadamard Transform & Fourier Space",p:"Shifting into Fourier space reveals underlying wave patterns rather than raw data points.",q:"What famous quantum algorithm relies on analyzing frequencies in Fourier space to function?",o:["Shor's algorithm","Genetic algorithm","Traveling Salesman algorithm","Brute force algorithm"],a:0,e:"Shor's algorithm famously looks at frequencies in Fourier space to find prime numbers."},
+  {s:"Part 10 · Hadamard Transform & Fourier Space",p:"Visualizing the difference between direct space and Fourier space helps in understanding how we manipulate qubits.",q:"If working in direct space is like moving top-to-bottom on the Bloch sphere, what is working in Fourier space compared to?",o:["Dropping a ping-pong ball on a cloth.","Moving around the equator, much like the face of a clock.","Climbing to the top of the highest peak.","Snapping two magnets together."],a:1,e:"Looking at the Fourier basis is like looking at the equator of the Bloch sphere, rotating around it like a clock."},
+  {s:"Part 10 · Hadamard Transform & Fourier Space",p:"To encode constraints in Fourier space, we manipulate a specific property of the quantum wave around that 'equator'.",q:"What property of the wave is primarily altered to encode information in Fourier space?",o:["Its amplitude","Its phase","Its mass","Its Hamiltonian ground state"],a:1,e:"Information and frequencies in the Fourier basis are encoded as phases, which correspond to rotations around the Z-axis (the equator)."},
+
+  /* ── Part 11: Advanced Algorithms & Sparse Encoding ── */
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"We learned that amplitude encoding is computationally expensive. However, certain problems make it highly efficient to map data into Fourier space.",q:"What mathematical property must a problem (like Max-XOR-SAT) have to make amplitude encoding in Fourier space computationally cheap?",o:["The frequencies must be infinite.","The frequencies must be sparse (very few Fourier coefficients).","The problem must have no optimal solution.","The bitstrings must contain only zeros."],a:1,e:"If a problem has sparse frequencies — meaning very few Fourier coefficients — then encoding it as amplitudes is not a big computational task."},
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"If a problem in direct space is jagged and complex, its Fourier transform might not be clean.",q:"What makes a function 'not sparse' in Fourier space?",o:["Having only one frequency.","Having a uniform superposition.","Having a large number of varying Fourier coefficients.","Having no Hamiltonian."],a:2,e:"A function is not sparse if it has a lot of Fourier coefficients, requiring many frequencies to represent it."},
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"The lecturer introduces a novel, advanced way of thinking about encoding and decoding quantum states, using a famous toy as an analogy.",q:"What puzzle is used as an analogy to describe encoding and decoding a problem in a quantum computer through repetitive targeted moves?",o:["A jigsaw puzzle","A Rubik's cube","A crossword puzzle","A Sudoku grid"],a:1,e:"Solving the problem is compared to a Rubik's cube, where moving in one direction to encode and reversing to decode looks repetitive but actually uncovers the solution."},
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"In this advanced algorithm framework, the initial matrix of constraints must be placed into the quantum system.",q:"How is the mathematical matrix 'B' (representing the linear constraints) inputted into the quantum computer during this advanced step?",o:["It is typed in as a classical string array.","It is encoded as a sequence of specific quantum gates.","It is run through a genetic heuristic first.","It is discarded and replaced with a uniform superposition."],a:1,e:"The matrix B, containing the problem's rules and constraints, is directly encoded as certain quantum gates inside the circuit."},
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"After manipulating the phases in Fourier space to process the constraints, the quantum computer must return to direct space so we can read the binary answer.",q:"What mathematical operation is applied at the very end of the circuit to map the solution back from frequencies to measurable bit strings?",o:["A gradient descent optimizer","A mixer Hamiltonian","A large layer of Hadamard transforms","A modulo 2 reset"],a:2,e:"At the end of the process, a big layer of Hadamard transforms is applied everywhere to return the data from frequencies back into ones and zeros."},
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"The entire goal of applying these operations, phase changes, and interference patterns culminates at the moment of measurement.",q:"What happens to the overall quantum state when we finally measure it after successfully engineering the interference?",o:["It collapses to the solution that is optimal.","It remains in a permanent uniform superposition.","It evolves slowly back to its ground state.","It ignores the objective function."],a:0,e:"We force the quantum state to collapse to the solution that is optimal upon measurement, maximizing the probability of the right output."},
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"The lecture emphasizes that true quantum optimization demands a different approach than classical programming.",q:"The transition from purely variational optimization to focusing on wave interference patterns is described by the speaker as what?",o:["A complete paradigm shift.","A minor software patch.","A classical heuristic.","A brute force method."],a:0,e:"Moving from traditional optimization to engineering interference patterns is described as a complete paradigm shift that feels completely new and unexpected."},
+  {s:"Part 11 · Advanced Algorithms & Sparse Fourier Encoding",p:"At the end of the lecture, students are given a call to action to practice coding these concepts.",q:"What primary software library and educational resource is recommended by the lecturer for further practice?",o:["The IBM Codebook","PennyLane and its Codebook","The Google Variational Toolkit","The Modulo 2 Library"],a:1,e:"The lecturer highly recommends going to penny.ai to use PennyLane and its Codebook, which provides theory, practice, and a demos library."},
+];
+
+let qi=0,step='intro',score=0,answered=0;
+const slot=document.getElementById('slot'),fill=document.getElementById('prog-fill'),barLbl=document.getElementById('bar-label'),scorEl=document.getElementById('score-tag');
+
+function updateBar(){
+  fill.style.width=(answered/50*100)+'%';
+  scorEl.textContent=score+' / 50';
+  barLbl.textContent=step==='intro'?'QAOA & Optimization':step==='summary'?'Complete':`Q${qi+1} of 50`;
+}
+function swap(fn){
+  const cur=slot.firstChild;
+  if(cur){cur.classList.add('out');setTimeout(()=>{slot.innerHTML='';fn();},220);}
+  else fn();
+}
+function showIntro(){
+  step='intro';updateBar();
+  const d=document.createElement('div');d.className='intro';
+  d.innerHTML=`
+    <div class="intro-tag">Module 10 · 50 Questions</div>
+    <h1>QAOA &amp; the Essential<br><em>Quantum Optimization Toolkit</em></h1>
+    <p>From combinatorial optimization and Max-XOR-SAT through Hamiltonians, adiabatic evolution, QAOA, interference, Fourier space, and sparse encoding.</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn" onclick="startQuiz()">Begin <span class="arr">→</span></button>
+    </div>`;
+  slot.appendChild(d);
+}
+function startQuiz(){qi=0;score=0;answered=0;swap(()=>showPreview());}
+function showPreview(){
+  step='preview';updateBar();
+  const d=document.createElement('div');d.className='card';
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot preview-dot"></span>
+      <span class="card-kind preview-kind">Preview</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    <div class="section-label">${data[qi].s}</div>
+    <div class="preview-body">${data[qi].p}</div>
+    <div class="btn-row"><button class="btn" onclick="swap(showQuestion)">Question <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+function showQuestion(){
+  step='question';updateBar();
+  const item=data[qi];
+  const d=document.createElement('div');d.className='card';
+  const optHtml=item.o.map((o,oi)=>`<button class="option" id="opt${oi}" onclick="pick(${oi})"><span class="opt-letter">${L[oi]}</span><span>${o}</span></button>`).join('');
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot question-dot"></span>
+      <span class="card-kind question-kind">Question ${qi+1} of 50</span>
+    </div>
+    <div class="question-body">${item.q}</div>
+    <div class="options">${optHtml}</div>`;
+  slot.appendChild(d);
+}
+function pick(oi){
+  const item=data[qi];
+  document.querySelectorAll('.option').forEach(b=>b.disabled=true);
+  const correct=item.a;
+  document.querySelectorAll('.option')[correct].classList.add(oi===correct?'opt-correct':'opt-reveal');
+  if(oi!==correct) document.querySelectorAll('.option')[oi].classList.add('opt-wrong');
+  setTimeout(()=>swap(()=>showResult(oi)),480);
+}
+function showResult(oi){
+  const item=data[qi];const ok=oi===item.a;
+  if(ok)score++;answered++;step='result';updateBar();
+  const d=document.createElement('div');d.className='card';
+  const dotCls=ok?'result-dot-correct':'result-dot-wrong';
+  const kindCls=ok?'result-kind-correct':'result-kind-wrong';
+  let rowsHtml=`<div class="chosen-row ${ok?'correct':'wrong'}"><span class="row-icon">${ok?'✓':'✗'}</span><span>${item.o[oi]}</span></div>`;
+  if(!ok) rowsHtml+=`<div class="chosen-row reveal"><span class="row-icon">✓</span><span><strong>Correct:</strong> ${item.o[item.a]}</span></div>`;
+  const isLast=qi===49;
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot ${dotCls}"></span>
+      <span class="card-kind ${kindCls}">${ok?'Correct!':'Incorrect'}</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    ${rowsHtml}
+    <div class="exp-wrap">
+      <div class="exp-label">Explanation</div>
+      <div class="exp-text">${item.e}</div>
+    </div>
+    <div class="btn-row"><button class="btn" onclick="advance()">${isLast?'See Results':'Next'} <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+function advance(){
+  if(qi===49){swap(showSummary);return;}
+  qi++;swap(showPreview);
+}
+function showSummary(){
+  step='summary';updateBar();
+  const pct=Math.round(score/50*100);
+  const msgs=[
+    [80,"Outstanding. From brute force and local optima all the way to Fourier space, sparse encoding, and paradigm-shifting interference — you have mastered the complete quantum optimization toolkit."],
+    [60,"Excellent. The core pipeline from objective function → Hamiltonian → QAOA is solid. Revisit Parts 10–11 on Fourier space, Hadamard transforms, and sparse encoding on your next pass."],
+    [40,"Good progress. Focus on Parts 5–7 — adiabatic optimization, QAOA mechanics, and variational parameters are the backbone and worth cementing before tackling the Fourier material."],
+    [20,"A solid start. Return to the combinatorial optimization fundamentals first, then trace the chain: objective function → ground state → adiabatic → QAOA → interference. It is tightly logical."],
+    [-1,"This is a deeply physical and mathematical lecture. Take it one part at a time and anchor every concept to the ping-pong ball or noise-canceling analogy — the intuition will arrive."]
+  ];
+  const msg=msgs.find(([t])=>pct>t)[1];
+  const d=document.createElement('div');d.className='summary';
+  d.innerHTML=`
+    <div class="sum-tag">Module 10 Complete · QAOA &amp; Quantum Optimization Toolkit</div>
+    <div class="sum-score">${score}<span>/50</span></div>
+    <div class="sum-pct">${pct}% correct</div>
+    <div class="sum-msg">${msg}</div>
+    <div class="sum-btns">
+      <a class="btn-home" href="index.html">← All Modules</a>
+      <button class="btn-reset" onclick="swap(showIntro)">↺ Retake</button>
+    </div>`;
+  slot.appendChild(d);
+}
+showIntro();
+</script>
+</body>
+</html>
