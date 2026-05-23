@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QAOA Deep Dive — Quantum Professor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050a12; --surface:#0a1525; --border:#1a3050;
+    --accent:#e879f9; --accent-dim:#a21caf; --gold:#f0c040;
+    --green:#39e07a; --red:#ff5566;
+    --text:#c8dff0; --text-dim:#6a8aaa; --text-bright:#e8f4ff;
+    --mono:'Space Mono',monospace; --serif:'Crimson Pro',Georgia,serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:18px;line-height:1.7;min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center}
+
+  .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(232,121,249,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(232,121,249,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+  .bg-glow{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(130px)}
+  .bg-glow-1{width:700px;height:700px;background:radial-gradient(circle,rgba(162,28,175,.14),transparent 70%);top:-250px;left:-250px}
+  .bg-glow-2{width:500px;height:500px;background:radial-gradient(circle,rgba(232,121,249,.07),transparent 70%);bottom:0;right:-150px;animation:bgPulse 9s ease-in-out infinite alternate}
+  @keyframes bgPulse{from{opacity:.5}to{opacity:1}}
+
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,10,18,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:11px 28px;display:flex;align-items:center;gap:16px}
+  .home-btn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:2px;white-space:nowrap;transition:all .15s;flex-shrink:0}
+  .home-btn:hover{color:var(--accent);border-color:rgba(232,121,249,.4)}
+  .bar-label{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;min-width:120px}
+  .progress-track{flex:1;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px rgba(232,121,249,.5)}
+  .score-tag{font-family:var(--mono);font-size:10px;color:var(--gold);white-space:nowrap;min-width:55px;text-align:right}
+
+  .stage{position:relative;z-index:1;width:100%;max-width:660px;padding:110px 24px 60px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:36px 36px 28px;animation:cardIn .32s cubic-bezier(.4,0,.2,1)}
+  @keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .card.out{animation:cardOut .22s cubic-bezier(.4,0,.2,1) forwards}
+  @keyframes cardOut{to{opacity:0;transform:translateY(-14px)}}
+
+  .card-header{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .card-kind{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+  .card-num{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto}
+
+  .preview-dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .preview-kind{color:var(--accent)}
+  .section-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);opacity:.6;margin-bottom:10px}
+  .preview-body{font-family:var(--serif);font-size:1.08rem;font-style:italic;color:var(--text);line-height:1.75;margin-bottom:28px}
+
+  .question-dot{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+  .question-kind{color:var(--gold)}
+  .question-body{font-family:var(--serif);font-size:1.1rem;color:var(--text-bright);line-height:1.65;margin-bottom:22px}
+
+  .options{display:flex;flex-direction:column;gap:9px;margin-bottom:6px}
+  .option{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:transparent;color:var(--text);font-family:var(--serif);font-size:.97rem;text-align:left;line-height:1.5;width:100%;transition:border-color .14s,background .14s,color .14s}
+  .option:hover:not(:disabled){border-color:rgba(232,121,249,.5);background:rgba(232,121,249,.05);color:var(--text-bright)}
+  .option:disabled{cursor:default}
+  .opt-letter{font-family:var(--mono);font-size:10px;color:var(--text-dim);border:1px solid var(--border);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:2px;transition:all .14s}
+  .option:hover:not(:disabled) .opt-letter{border-color:var(--accent);color:var(--accent)}
+  .option.opt-correct{border-color:var(--green);background:rgba(57,224,122,.09);color:var(--text-bright)}
+  .option.opt-correct .opt-letter{border-color:var(--green);color:var(--green);background:rgba(57,224,122,.15)}
+  .option.opt-wrong{border-color:var(--red);background:rgba(255,85,102,.09);color:var(--text-bright)}
+  .option.opt-wrong .opt-letter{border-color:var(--red);color:var(--red);background:rgba(255,85,102,.15)}
+  .option.opt-reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.04)}
+  .option.opt-reveal .opt-letter{border-color:var(--green);color:var(--green)}
+
+  .result-dot-correct{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .result-dot-wrong{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .result-kind-correct{color:var(--green)}
+  .result-kind-wrong{color:var(--red)}
+  .chosen-row{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:4px;border:1px solid;margin-bottom:12px;font-family:var(--serif);font-size:.97rem;line-height:1.5}
+  .chosen-row.correct{border-color:var(--green);background:rgba(57,224,122,.08);color:var(--text-bright)}
+  .chosen-row.wrong{border-color:var(--red);background:rgba(255,85,102,.08);color:var(--text-bright)}
+  .chosen-row.reveal{border-color:rgba(57,224,122,.4);background:rgba(57,224,122,.05);color:var(--text-bright)}
+  .row-icon{flex-shrink:0;font-size:.95rem;margin-top:1px}
+  .exp-wrap{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+  .exp-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .exp-label::before{content:'✦'}
+  .exp-text{font-size:.93rem;color:var(--text);font-style:italic;line-height:1.65}
+
+  .btn-row{display:flex;justify-content:flex-end;margin-top:26px}
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:11px 24px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:8px}
+  .btn:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(232,121,249,.35)}
+  .btn .arr{transition:transform .18s}
+  .btn:hover .arr{transform:translateX(4px)}
+
+  .intro{text-align:center;animation:cardIn .35s ease}
+  .intro-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px}
+  .intro-tag::before,.intro-tag::after{content:'';display:block;width:28px;height:1px;background:var(--accent)}
+  .intro h1{font-family:var(--serif);font-weight:300;font-size:clamp(1.9rem,5vw,3rem);color:var(--text-bright);line-height:1.2;margin-bottom:14px;letter-spacing:-.01em}
+  .intro h1 em{color:var(--accent);font-style:normal;font-weight:600}
+  .intro p{font-size:.9rem;color:var(--text-dim);font-family:var(--mono);margin-bottom:36px;line-height:1.7;max-width:420px;margin-left:auto;margin-right:auto}
+
+  .summary{text-align:center;animation:cardIn .4s ease}
+  .sum-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+  .sum-score{font-family:var(--serif);font-weight:300;font-size:clamp(3.5rem,12vw,5.5rem);color:var(--text-bright);line-height:1;margin-bottom:6px}
+  .sum-score span{color:var(--accent)}
+  .sum-pct{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:28px}
+  .sum-msg{font-size:1.03rem;font-style:italic;color:var(--text);line-height:1.7;max-width:440px;margin:0 auto 36px}
+  .sum-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn-reset{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer;transition:all .2s}
+  .btn-reset:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(232,121,249,.35)}
+  .btn-home{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:12px 28px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:3px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+  .btn-home:hover{border-color:var(--text-dim);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="topbar">
+  <a class="home-btn" href="index.html">← Home</a>
+  <div class="bar-label" id="bar-label">QAOA Deep Dive</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  <div class="score-tag" id="score-tag">0 / 50</div>
+</div>
+
+<div class="stage"><div id="slot"></div></div>
+
+<script>
+const L=['A','B','C','D'];
+const data=[
+  /* ── Part 1: Hamiltonians, Ground States & VQE Foundations ── */
+  {s:"Part 1 · Hamiltonians, Ground States & VQE Foundations",p:"A Hamiltonian is an operator described by a matrix that represents a specific physical property of a quantum system.",q:"What specific property of a quantum system does the Hamiltonian correspond to?",o:["Total momentum","Total energy","Superposition probability","State dimension"],a:1,e:"A Hamiltonian is an operator that corresponds to the total energy of a given quantum system."},
+  {s:"Part 1 · Hamiltonians, Ground States & VQE Foundations",p:"Quantum systems can exist in various states, but one particular state represents the minimum possible energy of that system.",q:"What is the lowest energy state of a quantum system called?",o:["Ansatz state","Trial state","Ground state","Excited state"],a:2,e:"The ground state of a quantum system is defined as the lowest energy state — the vector in the Hilbert space for which the expectation value of the Hamiltonian is lowest."},
+  {s:"Part 1 · Hamiltonians, Ground States & VQE Foundations",p:"The variational method is used to approximate the ground state and lowest energy of a quantum system.",q:"In the first step of the variational method, what do we choose to explore a specific subspace of the full Hilbert space?",o:["An adiabatic schedule","A classical vector","A parameterized ansatz or trial state","A continuous relaxation"],a:2,e:"We choose an ansatz or trial state parameterized by parameters θ, allowing us to search only a subspace of all possible quantum states."},
+  {s:"Part 1 · Hamiltonians, Ground States & VQE Foundations",p:"Variational Quantum Eigensolvers (VQEs) prepare the trial state using a parameterized quantum circuit consisting of general gates and rotational gates.",q:"How are the parameters (θ) updated in a VQE?",o:["By running a purely quantum adiabatic process","By using a classical optimizer in a hybrid quantum-classical feedback loop","By mapping them directly to a continuous variable problem","By taking the exponential of the Pauli Z matrices"],a:1,e:"The quantum computer measures the energy value, which is fed into a classical optimizer that iteratively updates the parameters in a hybrid quantum-classical loop."},
+  {s:"Part 1 · Hamiltonians, Ground States & VQE Foundations",p:"The Quantum Approximate Optimization Algorithm (QAOA) was introduced to solve optimization problems by mapping them to Hamiltonians.",q:"How does QAOA relate to the Variational Quantum Eigensolver (VQE)?",o:["QAOA is a classical alternative to VQE.","QAOA is a special case of VQE used for optimization.","VQE is a layerized version of QAOA.","QAOA replaces the Hamiltonian used in VQE with a neural network."],a:1,e:"QAOA can be seen as a special case of VQE where the optimization problem is encoded as a Hamiltonian whose ground state corresponds to the optimal solution."},
+
+  /* ── Part 2: QUBO & MaxCut Formulation ── */
+  {s:"Part 2 · QUBO & MaxCut Formulation",p:"QAOA solves specific types of optimization problems, categorized by their objective functions and constraints.",q:"What does QUBO stand for?",o:["Quantum Unconstrained Binary Optimization","Quadratic Unconstrained Binary Optimization","Quantum Universal Basic Optimization","Quadratic Universal Binary Operator"],a:1,e:"QUBO stands for Quadratic Unconstrained Binary Optimization, representing problems with a quadratic objective function and binary variables without constraints."},
+  {s:"Part 2 · QUBO & MaxCut Formulation",p:"In a QUBO problem, the optimization variables are restricted in the values they can take.",q:"What values can the vector x take in a QUBO problem?",o:["Continuous values between 0 and 1","Any integer value","Only values in 0 or 1","Only values in -1 or 1"],a:2,e:"The term 'binary' in QUBO means the optimization variables (the vector x) can only take values of 0 or 1."},
+  {s:"Part 2 · QUBO & MaxCut Formulation",p:"MaxCut is a prominent problem in graph theory that can be mapped to quantum computers.",q:"What is the primary objective of the MaxCut problem?",o:["To find the shortest path between two vertices","To partition graph vertices into two subsets to maximize the cumulative weight of connecting edges","To minimize the number of edges in a graph","To assign continuous variables to each vertex"],a:1,e:"The MaxCut problem involves partitioning a graph's vertices into two distinct subsets to find the maximum cumulative weight of all edges connecting vertices from different sets."},
+  {s:"Part 2 · QUBO & MaxCut Formulation",p:"When framing MaxCut as a binary optimization problem, we assign mathematical values to the graph's partitioned subsets.",q:"How is a cut in an n-dimensional graph mathematically represented?",o:["By an n-dimensional vector taking values in 0 or 1","By an n×n matrix of continuous weights","By an n-dimensional vector of Pauli Z operators","By an adjacency matrix of degree n"],a:0,e:"By identifying each partitioned set with either 0 or 1, every cut of the graph is represented by an n-dimensional vector with binary values."},
+  {s:"Part 2 · QUBO & MaxCut Formulation",p:"The cost function for a MaxCut instance involves summing over the edge weights Wᵢⱼ.",q:"In the MaxCut cost function formulation, when does an edge weight Wᵢⱼ contribute to the total sum?",o:["When vertices xᵢ and xⱼ take the same binary value","Only if the edge is unweighted","If and only if xᵢ and xⱼ take different binary values","When xᵢ and xⱼ are continuous fractions"],a:2,e:"An edge weight Wᵢⱼ only contributes to the cost function sum if the vertices xᵢ and xⱼ have different values, meaning they are in separate partitions."},
+  {s:"Part 2 · QUBO & MaxCut Formulation",p:"There is a direct mathematical translation between MaxCut and QUBO instances.",q:"True or False: Any general QUBO instance can be converted into a MaxCut instance, and vice versa.",o:["True, by introducing a slack variable.","False, QUBO cannot represent graphs.","False, MaxCut allows continuous variables unlike QUBO.","True, but only for unweighted graphs."],a:0,e:"Any MaxCut instance can be formulated as a QUBO, and the reverse is also true; any general QUBO can be turned into a MaxCut instance by introducing a slack variable."},
+  {s:"Part 2 · QUBO & MaxCut Formulation",p:"Classical algorithms attempt to approximate MaxCut solutions, achieving specific approximation ratios.",q:"How does the classical Goemans-Williamson algorithm solve the MaxCut problem?",o:["By randomly sampling bitstrings","By mapping the problem to a Pauli Z operator","By relaxing the problem into a continuous variable problem ranging from 0 to 1","By using a local nearest-neighbor update"],a:2,e:"The Goemans-Williamson algorithm relaxes the binary constraint, allowing continuous values from 0 to 1, making it easier to solve before rounding the result to a binary solution."},
+
+  /* ── Part 3: Encoding QUBO into a Quantum Hamiltonian ── */
+  {s:"Part 3 · Encoding QUBO into a Quantum Hamiltonian",p:"To apply QAOA to a QUBO problem, we must transition from classical cost functions to quantum mechanics.",q:"How is a QUBO instance encoded for QAOA?",o:["As a continuous classical neural network","As a problem Hamiltonian operator H_C","As a series of unparameterized Hadamard gates","As a state vector of purely zero values"],a:1,e:"QUBO instances are encoded into a problem Hamiltonian operator H_C such that applying H_C to a basis state yields the actual value of the cost function."},
+  {s:"Part 3 · Encoding QUBO into a Quantum Hamiltonian",p:"To map classical binary variables xᵢ ∈ {0,1} to quantum operators, we use Pauli matrices.",q:"Which quantum gate is used to identify binary values by outputting eigenvalues of either 1 or -1?",o:["Pauli X-gate","Pauli Y-gate","Pauli Z-gate","Hadamard gate"],a:2,e:"Applying a Pauli Z-gate to a computational basis state yields −1 if the state is |1⟩ and +1 if the state is |0⟩, allowing us to map binary values."},
+  {s:"Part 3 · Encoding QUBO into a Quantum Hamiltonian",p:"The relation between the classical binary variable xᵢ and the Pauli Z operator Zᵢ must be formalized algebraically.",q:"What is the correct mathematical relation mapping xᵢ to Zᵢ?",o:["xᵢ = Zᵢ","xᵢ = (I + Zᵢ) / 2","xᵢ = (I − Zᵢ) / 2","xᵢ = 1 − 2Zᵢ"],a:2,e:"By reordering the terms, the identity operation minus the Pauli Z operator over two applied to the basis state yields xᵢ, written as (I − Zᵢ) / 2."},
+  {s:"Part 3 · Encoding QUBO into a Quantum Hamiltonian",p:"Expanding the cost function with the Pauli Z relation generates the full problem Hamiltonian.",q:"What types of terms make up the quadratic interaction part of the encoded QUBO Hamiltonian?",o:["Single Pauli X operators","Single Pauli Z operators","Multiple Pauli Z operators acting on pairs of qubits","Continuous rotational Y gates"],a:2,e:"After expanding the cost function, the Hamiltonian contains constant terms, single Pauli Z terms (from the linear part), and interaction terms involving multiple Pauli Z operators acting on pairs."},
+
+  /* ── Part 4: The QAOA Circuit Architecture ── */
+  {s:"Part 4 · The QAOA Circuit Architecture",p:"QAOA begins its quantum circuit by putting the qubits into a specific initial state.",q:"How does the QAOA circuit prepare the initial equal superposition state?",o:["By applying a Pauli X gate to a single qubit","By applying an ansatz Z-gate to all qubit pairs","By applying a Hadamard gate to every single qubit","By measuring all qubits"],a:2,e:"Applying a Hadamard gate to every single qubit initially in the zero state creates an equal superposition of all possible computational basis states."},
+  {s:"Part 4 · The QAOA Circuit Architecture",p:"The QAOA variational form is characterized by a specific alternating structure parameterized by depth.",q:"If a QAOA circuit has a depth of P, what does the circuit consist of after the initial superposition?",o:["P continuous variable relaxations","P layers, each consisting of one cost layer and one mixer layer","P individual Hadamard gates","P classical optimization loops"],a:1,e:"The circuit applies P layers, where each layer consists of an alternating sequence: a cost layer followed by a mixer layer."},
+  {s:"Part 4 · The QAOA Circuit Architecture",p:"The layers in the QAOA circuit are generated using matrix exponentiation.",q:"What operator forms the cost layer of the QAOA circuit?",o:["The exponentiation of the mixer Hamiltonian","The sum of all Pauli X operators","The exponentiation of the cost Hamiltonian","A Trotterized single X-gate"],a:2,e:"Every cost layer is formed by taking the exponentiation of the cost (or problem) Hamiltonian."},
+  {s:"Part 4 · The QAOA Circuit Architecture",p:"Exponentiating specific matrices yields corresponding quantum rotation gates.",q:"What kind of gate is produced when a single Pauli Z matrix is exponentiated?",o:["Rotational X-gate","Rotational Y-gate","Rotational Z-gate","C-NOT gate"],a:2,e:"Taking the exponential of the Pauli Z matrix yields a corresponding single-qubit rotational Z-gate."},
+  {s:"Part 4 · The QAOA Circuit Architecture",p:"The interaction terms in the cost Hamiltonian involve multiplying two Pauli Z operators.",q:"What is produced when these Z-Z interaction terms are exponentiated in the cost layer?",o:["An ansatz Z-gate (a controlled single rotational gate)","A pure Hadamard transformation","A single unparameterized X-gate","A continuous Y-rotation"],a:0,e:"Exponentiating interaction terms with multiple Pauli Z operators results in an 'ansatz Z-gate,' which can be viewed as a controlled single rotational Z-gate between a qubit pair."},
+  {s:"Part 4 · The QAOA Circuit Architecture",p:"To perform exploration in the Hilbert space, QAOA uses a mixer layer following the cost layer.",q:"In the standard QAOA, what constitutes the mixer Hamiltonian?",o:["The sum of all Pauli Z operators","The sum of all Pauli X operators","The exponentiation of the cost layer","A series of C-NOT gates"],a:1,e:"The mixer layer is defined as the exponentiation of the mixer Hamiltonian, which in standard QAOA is the sum over all single Pauli X operators."},
+  {s:"Part 4 · The QAOA Circuit Architecture",p:"The mixer layer is implemented on the quantum hardware using specific rotational gates.",q:"Because the mixer Hamiltonian is a sum of Pauli X operators, what gates make up the mixer layer?",o:["Single rotational Z-gates applied to each qubit","Ansatz Z-gates applied to connected pairs","Single rotational X-gates applied to each single qubit","Hadamard gates"],a:2,e:"Exponentiating the Pauli X operators gives rotational X-gates, meaning the mixer layer simply consists of rotational X-gates applied to each individual qubit."},
+
+  /* ── Part 5: Parameters, Energy Landscape & Optimization ── */
+  {s:"Part 5 · Parameters, Energy Landscape & Optimization",p:"The QAOA circuit is a variational form, meaning its gates depend on classical parameters.",q:"What are the parameters that define the cost layers and mixer layers, respectively?",o:["Alpha (α) and Theta (θ)","Gamma (γ) and Beta (β)","Pi (π) and Omega (ω)","X and Z"],a:1,e:"The cost layers are parameterized by gamma (γ), while the mixer layers are parameterized by beta (β)."},
+  {s:"Part 5 · Parameters, Energy Landscape & Optimization",p:"A QAOA circuit of depth P implies a specific number of optimization parameters.",q:"How many total parameters must the classical optimizer solve for in a QAOA circuit of depth P?",o:["P","2P","P²","2^P"],a:1,e:"Since every cost layer requires one gamma parameter and every mixer layer requires one beta parameter, a circuit with P alternating layers requires exactly 2P parameters."},
+  {s:"Part 5 · Parameters, Energy Landscape & Optimization",p:"The quantum-classical hybrid loop utilizes both systems for what they do best.",q:"In the QAOA feedback loop, what is the specific role of the quantum computer?",o:["To update parameters β and γ","To calculate the derivative of the cost function","To execute the parameterized circuit and measure bitstring samples to evaluate the cost function","To round continuous classical solutions to binary ones"],a:2,e:"The quantum computer prepares the state and measures bitstring samples; the mean of these cuts evaluates the cost function, which is then handed off to the classical optimizer."},
+  {s:"Part 5 · Parameters, Energy Landscape & Optimization",p:"Understanding the QAOA energy landscape helps us know how difficult it is to optimize the parameters.",q:"What characterizes the visual shape of the QAOA energy landscape in terms of parameters β and γ?",o:["It is a completely flat plane.","It is a single, smooth convex bowl.","It is periodic and contains many suboptimal local maxima/minima.","It only exists for negative parameter values."],a:2,e:"The energy landscape is periodic in both beta and gamma and features numerous local optima alongside the global optima."},
+  {s:"Part 5 · Parameters, Energy Landscape & Optimization",p:"The structure of the quantum gates determines the nature of the energy landscape.",q:"Why is the QAOA energy landscape periodic?",o:["Because optimization problems always repeat their inputs.","Because the variational form uses rotational gates, which have a periodicity of 2π.","Because the classical optimizer restarts itself periodically.","Because the Goemans-Williamson algorithm forces it."],a:1,e:"We use rotational gates in the QAOA variational form, and these gates are inherently periodic with a period of 2π, reflecting onto the parameters β and γ."},
+  {s:"Part 5 · Parameters, Energy Landscape & Optimization",p:"Because the landscape has many local optima, finding the true ground state can be challenging.",q:"What happens if you choose a bad initial point or a bad classical optimizer for QAOA?",o:["The quantum computer will crash.","The circuit depth P will automatically increase.","You will likely get trapped in a local optimum and find worse results than if you picked good values.","The algorithm reverts to the VQE standard method."],a:2,e:"The classical optimizer is crucial; poor initial points or weak optimizers can prevent the algorithm from finding the global optimum."},
+
+  /* ── Part 6: Schrödinger Equation & Adiabatic Theory ── */
+  {s:"Part 6 · Schrödinger Equation & Adiabatic Theory",p:"The underlying theory of QAOA connects deeply to quantum dynamics.",q:"According to the Schrödinger equation, how is the time evolution of a quantum system determined?",o:["By exponentiating the system's Hamiltonian","By projecting it onto a classical neural network","By taking the inverse of the Pauli Z matrix","By summing up all classical constraints"],a:0,e:"The Schrödinger equation states that a system's time evolution is governed by exponentiating its Hamiltonian operator and applying it to the initial state."},
+  {s:"Part 6 · Schrödinger Equation & Adiabatic Theory",p:"Adiabatic quantum computing relies on a fundamental theorem regarding slowly changing systems.",q:"What does the Adiabatic Theorem state?",o:["A quantum system will instantly teleport if observed.","A quantum system in its ground state will remain in the ground state if the Hamiltonian is transitioned slowly enough.","Changing a Hamiltonian rapidly minimizes the ground state energy.","A continuous variable problem cannot be mapped adiabatically."],a:1,e:"If a system begins in a ground state and its Hamiltonian is changed to another Hamiltonian slowly enough, the system will remain in the ground state."},
+  {s:"Part 6 · Schrödinger Equation & Adiabatic Theory",p:"Adiabatic quantum computing uses this theorem to solve optimization problems.",q:"In adiabatic quantum computing, what is the final state of the system after a slow transition?",o:["An equal superposition state","The highest energy state of a random matrix","The ground state of the problem Hamiltonian, representing the problem's solution","A continuous value from 0 to 1"],a:2,e:"By preparing a simple ground state and evolving adiabatically, the system ends in the ground state of the problem Hamiltonian, yielding the original problem's solution."},
+
+  /* ── Part 7: Trotterization & QAOA as Adiabatic Evolution ── */
+  {s:"Part 7 · Trotterization & QAOA as Adiabatic Evolution",p:"Simulating time evolution requires exponentiating sums of matrices.",q:"The identity e^(A+B) = e^A · e^B is true for matrices A and B only under what condition?",o:["If A and B are both continuous","If A and B commute","If A and B are Pauli X operators","If A and B are parameterized by γ"],a:1,e:"We can only exponentiate matrices individually and multiply them if the two matrices commute, which is generally not the case for QAOA's Hamiltonians."},
+  {s:"Part 7 · Trotterization & QAOA as Adiabatic Evolution",p:"Because the cost and mixer Hamiltonians do not commute, we must approximate their exponential.",q:"What mathematical formula does QAOA rely on to approximate the exponential of the sum of two non-commuting matrices?",o:["The Goemans-Williamson formula","The Euler identity","The Trotter-Suzuki formula","The Sherrington-Kirkpatrick formula"],a:2,e:"The Trotter-Suzuki formula approximates the exponential of a matrix sum by breaking it into a product of alternating exponentials evaluated over small slices."},
+  {s:"Part 7 · Trotterization & QAOA as Adiabatic Evolution",p:"Applied to time evolution, the Trotter-Suzuki approximation dictates how the system is evolved.",q:"What does Trotterization practically mean for simulating a Hamiltonian that is the sum of H₁ and H₂?",o:["Evolving strictly by H₁, and discarding H₂","Alternatingly evolving the system by each Hamiltonian over much smaller time slices","Measuring the system at every classical update","Changing the initial state to a highest energy state"],a:1,e:"Trotterization means alternatingly evolving the system by H₁, then H₂, then H₁ again, using small time slices to approximate the combined time evolution."},
+  {s:"Part 7 · Trotterization & QAOA as Adiabatic Evolution",p:"The layerized structure of QAOA has a direct theoretical connection to this physical process.",q:"What do the individual cost and mixer layers of QAOA correspond to physically?",o:["Continuous variable relaxations","Trotterized segments of the time evolution operator for an adiabatic evolution","Classical slack variables","A neural network hidden layer"],a:1,e:"The alternating cost and mixer layers of QAOA are essentially a Trotterized approximation of an adiabatic schedule transitioning between the two Hamiltonians."},
+  {s:"Part 7 · Trotterization & QAOA as Adiabatic Evolution",p:"To follow the adiabatic theorem properly, the initial state must hold a specific relationship with the starting Hamiltonian.",q:"What is the relationship between the initial equal superposition state and the standard mixer Hamiltonian (sum of Pauli X operators)?",o:["It is the lowest energy ground state.","It has zero expectation value.","It is the highest energy state of the mixer Hamiltonian.","It is an undefined state."],a:2,e:"The equal superposition state is actually an eigenvector of the Pauli X matrix corresponding to the highest energy state of the mixer Hamiltonian."},
+  {s:"Part 7 · Trotterization & QAOA as Adiabatic Evolution",p:"Because we start in the highest energy state of the mixer, the adiabatic schedule will naturally track the highest energy state of the final Hamiltonian.",q:"Since QAOA tracks the highest energy state rather than the ground state, how do we adjust the problem to still find the minimum cost?",o:["We add a continuous slack variable.","We change the sign in the cost Hamiltonian H_C.","We replace the Pauli X operators with Pauli Y operators.","We reduce the depth P to 1."],a:1,e:"We resolve this by simply viewing it as a change of sign in the problem Hamiltonian H_C, allowing the highest energy state to map correctly to the optimization goal."},
+
+  /* ── Part 8: Performance Guarantees & Depth Analysis ── */
+  {s:"Part 8 · Performance Guarantees & Depth Analysis",p:"Understanding QAOA as an adiabatic schedule provides a key theoretical advantage.",q:"What performance guarantee does QAOA possess in the limit where depth P → ∞?",o:["It operates faster than classical hardware.","It will obtain the exact best value (optimal solution) for the optimization problem.","It will perfectly emulate the Goemans-Williamson algorithm.","It will require zero parameters to optimize."],a:1,e:"By the adiabatic theorem, in the limit of infinite depth P, Trotterization perfectly approximates adiabatic evolution, guaranteeing we find the optimal solution."},
+  {s:"Part 8 · Performance Guarantees & Depth Analysis",p:"Even before reaching infinite depth, increasing the depth P offers mathematical assurances.",q:"Why is a deeper QAOA circuit guaranteed to produce an optimal value at least as good as a shallower one?",o:["Because increasing P adds continuous relaxation constraints.","Because it increases the frequency of measurements.","Because increasing P only expands the subspace of the Hilbert space that the trial state lives in.","Because deeper circuits automatically run local classical algorithms."],a:2,e:"A deeper circuit expands the explorable subspace of the Hilbert space; therefore, its global optimum must be at least as good as the optimum found in the smaller subspace of a lower depth circuit."},
+  {s:"Part 8 · Performance Guarantees & Depth Analysis",p:"While QAOA performs perfectly at infinite depth, quantum computers today are limited.",q:"Does QAOA have performance guarantees for a finite depth P when solving general QUBO instances?",o:["Yes, it is guaranteed to beat the Goemans-Williamson algorithm for any P ≥ 2.","Yes, it always finds an approximation ratio of 0.878.","No, viewed as a VQE, there are no strict performance guarantees for the obtained solutions at finite P.","No, because classical optimizers are incapable of processing finite P circuits."],a:2,e:"At a finite P, QAOA operates as a heuristic VQE without general theoretical performance guarantees regarding the quality of the solution."},
+  {s:"Part 8 · Performance Guarantees & Depth Analysis",p:"Researchers have analyzed QAOA's performance against top classical algorithms like Goemans-Williamson.",q:"According to 2019 research, how deep must the QAOA circuit be to potentially beat the classical Goemans-Williamson algorithm's approximation ratio?",o:["P = 1","Super-logarithmic depth in relation to the problem size","Exactly P = 4","Sub-logarithmic depth"],a:1,e:"It was shown that QAOA requires at least super-logarithmic depth to exceed the approximation ratio of the classical Goemans-Williamson algorithm."},
+  {s:"Part 8 · Performance Guarantees & Depth Analysis",p:"Furthermore, at very shallow depths, QAOA can be outperformed by remarkably simple classical methods.",q:"For a depth of P=1, what class of classical algorithm has been proven to outperform QAOA on MaxCut?",o:["Global neural networks","The Trotter-Suzuki method","Local classical algorithms that update bitstrings by looking only at nearest-neighbor vertices","Adiabatic simulators"],a:2,e:"A local classical algorithm, which updates single bits based solely on the status of neighboring vertices, can outperform QAOA when P=1."},
+
+  /* ── Part 9: Hardware Challenges & Practical Limitations ── */
+  {s:"Part 9 · Hardware Challenges & Practical Limitations",p:"Running theoretical algorithms on current near-term quantum hardware introduces practical limitations.",q:"Why does executing a QAOA circuit for a fully connected MaxCut problem pose an issue for real hardware?",o:["Hardware cannot perform single-qubit rotations.","Real hardware has limited device connectivity, requiring many additional SWAP gates to interact distant qubits.","Fully connected problems require continuous values.","The depth P becomes infinite."],a:1,e:"Real devices lack full connectivity. Implementing an ansatz Z-gate between any arbitrary qubit pair requires physically swapping qubits across the chip, drastically increasing gate overhead and noise."},
+  {s:"Part 9 · Hardware Challenges & Practical Limitations",p:"Sampling from the quantum computer also introduces scaling issues.",q:"As the problem size (number of qubits) increases, what happens to the measurement process?",o:["It requires fewer shots because the subspace expands.","We must increase the number of shots (measurements) because the variance in bitstrings sampled increases.","It automatically applies a conditional value at risk.","Measurement becomes a classical continuous relaxation."],a:1,e:"The variance of the sampled bitstrings increases with problem size, necessitating more measurement shots to get an accurate evaluation of the cost function."},
+
+  /* ── Part 10: Advanced Techniques — CVaR, Warm Starting & Parameter Concentration ── */
+  {s:"Part 10 · Advanced Techniques — CVaR, Warm Starting & Parameter Concentration",p:"To speed up and improve the classical optimization process, algorithmic adaptations have been developed.",q:"What does the Conditional Value at Risk (CVaR) adaptation do differently from standard QAOA?",o:["It exponentiates the Pauli Y matrix instead of Pauli X.","It relies entirely on a classical neural network for optimization.","Instead of taking the mean of all measured outcomes, it takes the mean of only the best fraction (α) of the bitstrings.","It completely skips the measurement step."],a:2,e:"Because we only care about finding one good optimization solution, CVaR averages only the top-performing fraction of measured bitstrings, effectively steering the optimizer toward the best outcomes rather than the average."},
+  {s:"Part 10 · Advanced Techniques — CVaR, Warm Starting & Parameter Concentration",p:"The initial state of QAOA is typically an equal superposition, but this can be modified to give the algorithm a head start.",q:"What is the fundamental concept behind 'warm starting' QAOA?",o:["Heating the quantum chip to reduce decoherence","Replacing the initial superposition state with a state derived from a classical continuous optimization procedure","Starting the optimization loop with γ = 0","Pre-computing the Trotterization formula"],a:1,e:"Warm starting replaces the default equal superposition with a biased state corresponding to a continuous-valued relaxation previously solved by a classical algorithm, giving the quantum search a better starting point."},
+  {s:"Part 10 · Advanced Techniques — CVaR, Warm Starting & Parameter Concentration",p:"Changing the initial state in a warm-started QAOA has cascading effects on the rest of the algorithm's design.",q:"If we change the initial state for warm starting, what else must be modified in the QAOA circuit to preserve adiabatic properties?",o:["The cost Hamiltonian must be removed.","The parameters must be restricted to binary values.","The mixer Hamiltonian must be replaced so the initial state remains its highest energy (or ground) state.","The device connectivity must be made fully connected."],a:2,e:"To maintain the adiabatic guarantee, the initial state must be an eigenstate of the mixer Hamiltonian. Thus, replacing the initial state requires a corresponding replacement of the mixer Hamiltonian."},
+  {s:"Part 10 · Advanced Techniques — CVaR, Warm Starting & Parameter Concentration",p:"Finding optimal parameters (β, γ) can be computationally expensive, but research shows they exhibit a helpful property across similar problems.",q:"What does 'parameter concentration' refer to in the context of QAOA?",o:["The parameters all shrink to zero in the infinite limit.","The optimal parameters for the QAOA circuit do not differ very much across different problem instances of the same class.","Only beta is used, and gamma is concentrated out.","The parameters continuously fluctuate without settling."],a:1,e:"Studies reveal that optimal parameters concentrate — meaning they remain largely independent of the specific problem instance, particularly as problem size increases."},
+  {s:"Part 10 · Advanced Techniques — CVaR, Warm Starting & Parameter Concentration",p:"Parameter concentration can be heavily leveraged to reduce the classical optimization workload.",q:"How can we practically use the phenomenon of parameter concentration?",o:["By entirely bypassing the quantum computer for large problems","By using the optimal parameters found for a small sub-problem as starting values to optimize a much larger problem instance","By eliminating the need for a cost Hamiltonian","By permanently fixing P = 1"],a:1,e:"Because parameters concentrate across different problem sizes, we can discover the optimal parameters on an easy-to-simulate small instance and use them to effectively jump-start the optimization process on a massive, hard-to-simulate problem instance."},
+];
+
+let qi=0,step='intro',score=0,answered=0;
+const slot=document.getElementById('slot'),fill=document.getElementById('prog-fill'),barLbl=document.getElementById('bar-label'),scorEl=document.getElementById('score-tag');
+
+function updateBar(){
+  fill.style.width=(answered/50*100)+'%';
+  scorEl.textContent=score+' / 50';
+  barLbl.textContent=step==='intro'?'QAOA Deep Dive':step==='summary'?'Complete':`Q${qi+1} of 50`;
+}
+function swap(fn){
+  const cur=slot.firstChild;
+  if(cur){cur.classList.add('out');setTimeout(()=>{slot.innerHTML='';fn();},220);}
+  else fn();
+}
+function showIntro(){
+  step='intro';updateBar();
+  const d=document.createElement('div');d.className='intro';
+  d.innerHTML=`
+    <div class="intro-tag">Module 9.2 · Bonus · 50 Questions</div>
+    <h1>QAOA — <em>Deep Dive</em></h1>
+    <p>From Hamiltonians and QUBO through full circuit architecture, Trotterization, adiabatic theory, performance guarantees, and advanced techniques including CVaR, warm starting, and parameter concentration.</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn" onclick="startQuiz()">Begin <span class="arr">→</span></button>
+    </div>`;
+  slot.appendChild(d);
+}
+function startQuiz(){qi=0;score=0;answered=0;swap(()=>showPreview());}
+function showPreview(){
+  step='preview';updateBar();
+  const d=document.createElement('div');d.className='card';
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot preview-dot"></span>
+      <span class="card-kind preview-kind">Preview</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    <div class="section-label">${data[qi].s}</div>
+    <div class="preview-body">${data[qi].p}</div>
+    <div class="btn-row"><button class="btn" onclick="swap(showQuestion)">Question <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+function showQuestion(){
+  step='question';updateBar();
+  const item=data[qi];
+  const d=document.createElement('div');d.className='card';
+  const optHtml=item.o.map((o,oi)=>`<button class="option" id="opt${oi}" onclick="pick(${oi})"><span class="opt-letter">${L[oi]}</span><span>${o}</span></button>`).join('');
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot question-dot"></span>
+      <span class="card-kind question-kind">Question ${qi+1} of 50</span>
+    </div>
+    <div class="question-body">${item.q}</div>
+    <div class="options">${optHtml}</div>`;
+  slot.appendChild(d);
+}
+function pick(oi){
+  const item=data[qi];
+  document.querySelectorAll('.option').forEach(b=>b.disabled=true);
+  const correct=item.a;
+  document.querySelectorAll('.option')[correct].classList.add(oi===correct?'opt-correct':'opt-reveal');
+  if(oi!==correct) document.querySelectorAll('.option')[oi].classList.add('opt-wrong');
+  setTimeout(()=>swap(()=>showResult(oi)),480);
+}
+function showResult(oi){
+  const item=data[qi];const ok=oi===item.a;
+  if(ok)score++;answered++;step='result';updateBar();
+  const d=document.createElement('div');d.className='card';
+  const dotCls=ok?'result-dot-correct':'result-dot-wrong';
+  const kindCls=ok?'result-kind-correct':'result-kind-wrong';
+  let rowsHtml=`<div class="chosen-row ${ok?'correct':'wrong'}"><span class="row-icon">${ok?'✓':'✗'}</span><span>${item.o[oi]}</span></div>`;
+  if(!ok) rowsHtml+=`<div class="chosen-row reveal"><span class="row-icon">✓</span><span><strong>Correct:</strong> ${item.o[item.a]}</span></div>`;
+  const isLast=qi===49;
+  d.innerHTML=`
+    <div class="card-header">
+      <span class="dot ${dotCls}"></span>
+      <span class="card-kind ${kindCls}">${ok?'Correct!':'Incorrect'}</span>
+      <span class="card-num">Q${qi+1} of 50</span>
+    </div>
+    ${rowsHtml}
+    <div class="exp-wrap">
+      <div class="exp-label">Explanation</div>
+      <div class="exp-text">${item.e}</div>
+    </div>
+    <div class="btn-row"><button class="btn" onclick="advance()">${isLast?'See Results':'Next'} <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+function advance(){
+  if(qi===49){swap(showSummary);return;}
+  qi++;swap(showPreview);
+}
+function showSummary(){
+  step='summary';updateBar();
+  const pct=Math.round(score/50*100);
+  const msgs=[
+    [80,"Outstanding. Hamiltonians, QUBO encoding, full circuit architecture, Trotterization, adiabatic theory, CVaR, warm starting, and parameter concentration — you have mastered QAOA at depth."],
+    [60,"Excellent. The core circuit mechanics and adiabatic connection are solid. Revisit Parts 7–8 on Trotterization and performance guarantees, and Part 10 on advanced techniques."],
+    [40,"Good progress. Focus on the QUBO-to-Hamiltonian encoding (Parts 2–3) and the Trotter-Suzuki connection (Part 7) — these are the most mathematically dense sections."],
+    [20,"A solid start. Return to the Hamiltonian and VQE foundations first, then trace the circuit architecture step by step — γ and β will start to feel natural."],
+    [-1,"QAOA is mathematically rich. Take it one part at a time and connect each concept to the circuit diagram — the theory and the gates are two sides of the same coin."]
+  ];
+  const msg=msgs.find(([t])=>pct>t)[1];
+  const d=document.createElement('div');d.className='summary';
+  d.innerHTML=`
+    <div class="sum-tag">Module 9.2 Complete · QAOA Deep Dive</div>
+    <div class="sum-score">${score}<span>/50</span></div>
+    <div class="sum-pct">${pct}% correct</div>
+    <div class="sum-msg">${msg}</div>
+    <div class="sum-btns">
+      <a class="btn-home" href="index.html">← All Modules</a>
+      <button class="btn-reset" onclick="swap(showIntro)">↺ Retake</button>
+    </div>`;
+  slot.appendChild(d);
+}
+showIntro();
+</script>
+</body>
+</html>
