@@ -1,0 +1,376 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --sf-bg: #070b14;
+  --sf-surface: #0d1524;
+  --sf-surface2: #111e35;
+  --sf-border: #1e3a5f;
+
+  --sf-accent: #00c8ff;
+  --sf-accent2: #0066aa;
+
+  --sf-text: #c8e8ff;
+  --sf-text-muted: #5a8aaa;
+
+  --sf-success: #00ff88;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--sf-bg);
+  color: var(--sf-text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ===== Header ===== */
+
+h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--sf-accent);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+p {
+  color: var(--sf-text-muted);
+  line-height: 1.8;
+  margin-bottom: 30px;
+}
+
+/* ===== Card ===== */
+
+.page-card {
+  background: var(--sf-surface);
+  border: 1px solid var(--sf-border);
+  border-radius: 8px;
+  padding: 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--sf-accent),
+    transparent
+  );
+}
+
+/* ===== Course Links ===== */
+
+ul {
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+
+li a {
+  display: block;
+  padding: 16px 18px;
+  text-decoration: none;
+
+  background: var(--sf-surface2);
+  border: 1px solid var(--sf-border);
+  border-radius: 6px;
+
+  color: var(--sf-text);
+
+  transition: all 0.2s ease;
+}
+
+li a:hover {
+  border-color: var(--sf-accent);
+  background: #10213d;
+  transform: translateX(4px);
+
+  box-shadow: 0 0 12px rgba(0, 200, 255, 0.18);
+}
+
+/* ===== Table ===== */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+thead,
+th {
+  background: var(--sf-surface2);
+}
+
+th {
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sf-accent);
+}
+
+th,
+td {
+  padding: 16px;
+  border: 1px solid var(--sf-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+tr:nth-child(even) {
+  background: rgba(255,255,255,0.015);
+}
+
+tr:hover {
+  background: rgba(0,200,255,0.04);
+}
+
+/* ===== Quiz Buttons ===== */
+
+td a {
+  display: inline-block;
+
+  padding: 8px 18px;
+
+  border: 1px solid var(--sf-accent);
+  border-radius: 4px;
+
+  color: var(--sf-accent);
+  text-decoration: none;
+
+  transition: all 0.15s ease;
+}
+
+td a:hover {
+  background: rgba(0, 200, 255, 0.1);
+  box-shadow: 0 0 8px rgba(0, 200, 255, 0.3);
+}
+
+/* ===== Section Label ===== */
+
+.section-label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sf-accent);
+  margin-bottom: 16px;
+}
+
+.section-label::before {
+  content: "● ";
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+
+  body {
+    padding: 20px 12px;
+  }
+
+  h1 {
+    font-size: 30px;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .page-card {
+    padding: 20px;
+  }
+}
+
+.course-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 24px 0 32px;
+  color: var(--sf-text-muted);
+  font-size: 13px;
+}
+
+.lecture-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.lecture-card {
+  background: var(--sf-surface2);
+  border: 1px solid var(--sf-border);
+  border-radius: 6px;
+  padding: 24px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.lecture-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--sf-accent);
+}
+
+.lecture-card:hover {
+  border-color: var(--sf-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(0, 200, 255, 0.15);
+}
+
+.lecture-number {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sf-accent);
+  margin-bottom: 10px;
+}
+
+.lecture-card h2 {
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--sf-text);
+  margin-bottom: 12px;
+  font-size: 24px;
+}
+
+.lecture-card p {
+  margin-bottom: 20px;
+  color: var(--sf-text-muted);
+  line-height: 1.7;
+}
+
+.launch-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 1px solid var(--sf-accent);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--sf-accent);
+  transition: all 0.15s ease;
+}
+
+.launch-btn:hover {
+  background: rgba(0, 200, 255, 0.10);
+  box-shadow: 0 0 10px rgba(0, 200, 255, 0.30);
+}
+
+.navigation-row {
+  margin-top: 32px;
+}
+
+.back-link {
+  color: var(--sf-text-muted);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--sf-accent);
+}
+
+@media (min-width: 900px) {
+  .lecture-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.course-card {
+  background: var(--sf-surface2);
+  border: 1px solid var(--sf-border);
+  border-radius: 6px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.course-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--sf-accent);
+}
+
+.course-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--sf-accent);
+  box-shadow: 0 0 18px rgba(0, 200, 255, 0.15);
+}
+
+.course-tag {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--sf-accent);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.course-card h2 {
+  font-family: var(--sf-head);
+  font-size: 28px;
+  margin-bottom: 14px;
+  color: var(--sf-text);
+}
+
+.course-card p {
+  color: var(--sf-text-muted);
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.portal-footer {
+  margin-top: 40px;
+  text-align: center;
+  color: var(--sf-text-muted);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-top: 1px solid var(--sf-border);
+  padding-top: 20px;
+}
+
+.portal-section {
+    margin-top: 40px;
+}
+
+.section-heading {
+    font-family: var(--sf-head);
+    font-size: 24px;
+    color: var(--sf-accent);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--sf-border);
+    letter-spacing: 0.05em;
+}
