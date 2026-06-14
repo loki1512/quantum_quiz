@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Computing — Lecture Series</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050a12; --surface:#0a1525; --border:#1a3050; --border2:#243d5e;
+    --cyan:#00d4ff; --cyan-dim:#0090b3;
+    --violet:#a78bfa;
+    --green:#39e07a;
+    --amber:#fbbf24;
+    --rose:#fb7185;
+    --sky:#38bdf8;
+    --limegreen:#84cc16;
+    --text:#c8dff0; --text-dim:#6a8aaa; --text-bright:#e8f4ff;
+    --mono:'Space Mono',monospace; --serif:'Crimson Pro',Georgia,serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:18px;line-height:1.7;min-height:100vh;overflow-x:hidden}
+
+  .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+  .orb{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(140px)}
+  .o1{width:700px;height:700px;background:radial-gradient(circle,rgba(0,100,200,.14),transparent 70%);top:-300px;left:-200px}
+  .o2{width:600px;height:600px;background:radial-gradient(circle,rgba(0,212,255,.06),transparent 70%);bottom:-200px;right:-200px;animation:pulse 10s ease-in-out infinite alternate}
+  .o3{width:400px;height:400px;background:radial-gradient(circle,rgba(167,139,250,.07),transparent 70%);top:45%;left:55%;transform:translate(-50%,-50%)}
+  @keyframes pulse{from{opacity:.4}to{opacity:1}}
+
+  .wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 28px 80px}
+
+  /* HERO */
+  .hero{padding:80px 0 56px}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px;display:flex;align-items:center;gap:12px}
+  .eyebrow::before{content:'';display:block;width:36px;height:1px;background:var(--cyan)}
+  h1{font-family:var(--serif);font-weight:300;font-size:clamp(2.2rem,5.5vw,3.8rem);color:var(--text-bright);line-height:1.12;letter-spacing:-.02em;margin-bottom:18px}
+  h1 strong{color:var(--cyan);font-weight:600}
+  .hero-sub{font-size:.9rem;color:var(--text-dim);font-family:var(--mono);max-width:520px;line-height:1.8}
+
+  /* STATS */
+  .stats{display:flex;gap:36px;margin-top:40px;flex-wrap:wrap}
+  .stat{display:flex;flex-direction:column;gap:4px}
+  .stat-val{font-family:var(--serif);font-size:2.2rem;font-weight:300;color:var(--text-bright);line-height:1}
+  .stat-val span{color:var(--cyan)}
+  .stat-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim)}
+
+  /* DIVIDER */
+  .divider{display:flex;align-items:center;gap:16px;margin:56px 0 32px;opacity:.5}
+  .divider-line{flex:1;height:1px;background:var(--border)}
+  .divider-text{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);white-space:nowrap}
+
+  /* MODULE GRID */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+
+  /* MODULE CARD */
+  .module{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:28px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .2s,box-shadow .2s,transform .2s;position:relative;overflow:hidden}
+  .module::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s}
+  .module:hover{transform:translateY(-3px)}
+  .module:hover::before{opacity:1}
+
+  /* per-colour theming */
+  .mod-cyan{border-color:rgba(0,212,255,.2)}
+  .mod-cyan:hover{border-color:rgba(0,212,255,.5);box-shadow:0 12px 40px rgba(0,212,255,.1)}
+  .mod-cyan::before{background:linear-gradient(135deg,rgba(0,212,255,.04),transparent)}
+
+  .mod-violet{border-color:rgba(167,139,250,.2)}
+  .mod-violet:hover{border-color:rgba(167,139,250,.5);box-shadow:0 12px 40px rgba(167,139,250,.1)}
+  .mod-violet::before{background:linear-gradient(135deg,rgba(167,139,250,.04),transparent)}
+
+  .mod-amber{border-color:rgba(251,191,36,.2)}
+  .mod-amber:hover{border-color:rgba(251,191,36,.5);box-shadow:0 12px 40px rgba(251,191,36,.1)}
+  .mod-amber::before{background:linear-gradient(135deg,rgba(251,191,36,.04),transparent)}
+
+  .mod-rose{border-color:rgba(251,113,133,.2)}
+  .mod-rose:hover{border-color:rgba(251,113,133,.5);box-shadow:0 12px 40px rgba(251,113,133,.1)}
+  .mod-rose::before{background:linear-gradient(135deg,rgba(251,113,133,.04),transparent)}
+
+  .mod-sky{border-color:rgba(56,189,248,.2)}
+  .mod-sky:hover{border-color:rgba(56,189,248,.5);box-shadow:0 12px 40px rgba(56,189,248,.1)}
+  .mod-sky::before{background:linear-gradient(135deg,rgba(56,189,248,.04),transparent)}
+
+  .mod-green{border-color:rgba(57,224,122,.2)}
+  .mod-green:hover{border-color:rgba(57,224,122,.5);box-shadow:0 12px 40px rgba(57,224,122,.1)}
+  .mod-green::before{background:linear-gradient(135deg,rgba(57,224,122,.04),transparent)}
+
+  .mod-limegreen{border-color:rgba(132,225,90,.2)}
+  .mod-limegreen:hover{border-color:rgba(132,225,90,.5);box-shadow:0 12px 40px rgba(132,225,90,.1)}
+  .mod-limegreen::before{background:linear-gradient(135deg,rgba(132,225,90,.04),transparent)}
+
+  .mod-num{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:18px}
+  .mod-cyan  .mod-num{color:var(--cyan)}
+  .mod-violet.mod-num{color:var(--violet)}
+  .mod-amber .mod-num{color:var(--amber)}
+  .mod-rose  .mod-num{color:var(--rose)}
+  .mod-sky   .mod-num{color:var(--sky)}
+  .mod-green .mod-num{color:var(--green)}
+  .mod-limegreen .mod-num{color:var(--limegreen)}
+  /* fallback — set explicitly */
+  .c-cyan  {color:var(--cyan)}
+  .c-violet{color:var(--violet)}
+  .c-amber {color:var(--amber)}
+  .c-rose  {color:var(--rose)}
+  .c-sky   {color:var(--sky)}
+  .c-green {color:var(--green)}
+  .c-limegreen {color:var(--limegreen)}
+
+  .mod-icon{font-size:2rem;margin-bottom:14px;line-height:1}
+  .mod-title{font-family:var(--serif);font-size:1.3rem;font-weight:400;color:var(--text-bright);line-height:1.3;margin-bottom:10px}
+  .mod-desc{font-size:.82rem;color:var(--text-dim);font-family:var(--mono);line-height:1.7;flex:1;margin-bottom:22px}
+
+  .mod-meta{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+  .mod-pills{display:flex;gap:6px;flex-wrap:wrap}
+  .pill{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px;border:1px solid}
+  .p-cyan  {color:var(--cyan);  border-color:rgba(0,212,255,.25); background:rgba(0,212,255,.06)}
+  .p-violet{color:var(--violet);border-color:rgba(167,139,250,.25);background:rgba(167,139,250,.06)}
+  .p-amber {color:var(--amber); border-color:rgba(251,191,36,.25); background:rgba(251,191,36,.06)}
+  .p-rose  {color:var(--rose);  border-color:rgba(251,113,133,.25);background:rgba(251,113,133,.06)}
+  .p-sky   {color:var(--sky);   border-color:rgba(56,189,248,.25); background:rgba(56,189,248,.06)}
+  .p-green {color:var(--green); border-color:rgba(57,224,122,.25); background:rgba(57,224,122,.06)}
+  .p-limegreen {color:var(--limegreen); border-color:rgba(132,225,90,.25); background:rgba(132,225,90,.06)}
+  .mod-arrow{font-family:var(--mono);font-size:14px;color:var(--text-dim);transition:color .2s,transform .2s}
+  .module:hover .mod-arrow{transform:translateX(4px)}
+  .mod-cyan:hover  .mod-arrow{color:var(--cyan)}
+  .mod-violet:hover.mod-arrow{color:var(--violet)}
+  .mod-amber:hover .mod-arrow{color:var(--amber)}
+  .mod-rose:hover  .mod-arrow{color:var(--rose)}
+  .mod-sky:hover   .mod-arrow{color:var(--sky)}
+  .mod-green:hover .mod-arrow{color:var(--green)}
+  .mod-limegreen:hover .mod-arrow{color:var(--limegreen)}
+  /* progress bar inside card */
+  .mod-progress{height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:18px}
+  .mod-fill{height:100%;border-radius:2px;width:0%}
+  .mod-cyan  .mod-fill{background:linear-gradient(90deg,var(--cyan-dim),var(--cyan))}
+  .mod-violet .mod-fill{background:linear-gradient(90deg,#7c3aed,var(--violet))}
+  .mod-amber .mod-fill{background:linear-gradient(90deg,#d97706,var(--amber))}
+  .mod-rose  .mod-fill{background:linear-gradient(90deg,#e11d48,var(--rose))}
+  .mod-sky   .mod-fill{background:linear-gradient(90deg,#0369a1,var(--sky))}
+  .mod-green .mod-fill{background:linear-gradient(90deg,#16a34a,var(--green))}
+  .mod-limegreen .mod-fill{background:linear-gradient(90deg,#84e15a,var(--limegreen))}
+
+  /* HOW IT WORKS */
+  .how{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .step{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px;display:flex;gap:14px;align-items:flex-start}
+  .step-n{font-family:var(--mono);font-size:10px;color:var(--cyan);border:1px solid rgba(0,212,255,.25);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:2px}
+  .step-body{font-family:var(--mono);font-size:.78rem;color:var(--text-dim);line-height:1.6}
+  .step-body strong{display:block;color:var(--text);margin-bottom:4px;font-size:.8rem}
+
+  /* FOOTER */
+  footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .footer-brand{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim)}
+  .footer-love{font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:right;line-height:1.7}
+  .footer-love span{color:var(--rose)}
+  .footer-love strong{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+<div class="orb o3"></div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="eyebrow">Quantum Computing · Lecture Series</div>
+    <h1>Master Quantum<br><strong>Algorithms</strong></h1>
+    <p class="hero-sub">// Guided quiz sequences that build from first principles to advanced mathematics. Each module is designed for 2–3 passes to achieve full mastery.</p>
+    <div class="stats">
+      <div class="stat"><div class="stat-val">8<span></span></div><div class="stat-lbl">Modules available</div></div>
+      <div class="stat"><div class="stat-val">400<span></span></div><div class="stat-lbl">Total questions</div></div>
+      <div class="stat"><div class="stat-val">200<span>+</span></div><div class="stat-lbl">Concepts covered</div></div>
+    </div>
+  </section>
+
+  <!-- MODULES -->
+  <div class="divider"><div class="divider-line"></div><div class="divider-text">Modules</div><div class="divider-line"></div></div>
+
+  <div class="grid">
+
+    <!-- 01 QFT & QPE -->
+    <a class="module mod-cyan" href="qft_quiz.html">
+      <div class="mod-num c-cyan">Module 01</div>
+      <div class="mod-icon">⟨ψ|</div>
+      <div class="mod-progress"><div class="mod-fill"></div></div>
+      <div class="mod-title">QFT &amp; Quantum Phase Estimation</div>
+      <div class="mod-desc">From classical DFT to QPE. Covers QFT circuit construction, phase kickback, Shor's algorithm, VQE, and the Inverse QFT.</div>
+      <div class="mod-meta">
+        <div class="mod-pills"><span class="pill p-cyan">50 questions</span><span class="pill p-cyan">QFT · QPE</span></div>
+        <span class="mod-arrow c-cyan">→</span>
+      </div>
+    </a>
+
+    <!-- 02 Grover's -->
+    <a class="module mod-violet" href="grovers_quiz.html">
+      <div class="mod-num c-violet">Module 02</div>
+      <div class="mod-icon">⊕</div>
+      <div class="mod-progress"><div class="mod-fill"></div></div>
+      <div class="mod-title">Grover's Algorithm &amp; Quantum Search</div>
+      <div class="mod-desc">From bra-ket notation to O(√N) complexity. Covers oracle design, phase kickback, diffusion operator, amplitude amplification, and geometric rotation.</div>
+      <div class="mod-meta">
+        <div class="mod-pills"><span class="pill p-violet">50 questions</span><span class="pill p-violet">Search · Oracle</span></div>
+        <span class="mod-arrow c-violet">→</span>
+      </div>
+    </a>
+
+    <!-- 03 VQE Intro -->
+    <a class="module mod-amber" href="vqa_foundations.html">
+      <div class="mod-num c-amber">Module 03</div>
+      <div class="mod-icon">∇</div>
+      <div class="mod-progress"><div class="mod-fill"></div></div>
+      <div class="mod-title">VQE — Foundations &amp; the Variational Principle</div>
+      <div class="mod-desc">From parameterized gates and the variational principle through Ansatz design, the Parameter Shift Rule, and real-world applications in chemistry and finance.</div>
+      <div class="mod-meta">
+        <div class="mod-pills"><span class="pill p-amber">50 questions</span><span class="pill p-amber">VQE · Ansatz</span></div>
+        <span class="mod-arrow c-amber">→</span>
+      </div>
+    </a>
+
+    <!-- 04 Adv VQE Part 1 -->
+    <a class="module mod-rose" href="advanced_vqa_part_1.html">
+      <div class="mod-num c-rose">Module 04</div>
+      <div class="mod-icon">◈</div>
+      <div class="mod-progress"><div class="mod-fill"></div></div>
+      <div class="mod-title">Advanced VQA — Part 1: Fundamentals &amp; Architectures</div>
+      <div class="mod-desc">From qubits and the Bloch sphere through quantum gates, entanglement, Hilbert space, and the Expressibility/Trainability trade-offs of Hardware-Efficient vs Problem-Inspired Ansätze.</div>
+      <div class="mod-meta">
+        <div class="mod-pills"><span class="pill p-rose">50 questions</span><span class="pill p-rose">VQA · Bloch · HEA</span></div>
+        <span class="mod-arrow c-rose">→</span>
+      </div>
+    </a>
+
+    <!-- 05 Adv VQE Part 2 -->
+    <a class="module mod-sky" href="advanced_vqa_part_2.html">
+      <div class="mod-num c-sky">Module 05</div>
+      <div class="mod-icon">∿</div>
+      <div class="mod-progress"><div class="mod-fill"></div></div>
+      <div class="mod-title">Advanced VQA — Part 2: Hamiltonians, Optimizers &amp; Barren Plateaus</div>
+      <div class="mod-desc">Hamiltonians and expectation values, the full VQE hybrid loop, gradient-free and gradient-based optimizers (COBYLA, ADAM, SPSA), measurement scaling, and barren plateau mitigation.</div>
+      <div class="mod-meta">
+        <div class="mod-pills"><span class="pill p-sky">50 questions</span><span class="pill p-sky">Optimizers · Barren</span></div>
+        <span class="mod-arrow c-sky">→</span>
+      </div>
+    </a>
+    <!-- 06 Adv VQA Part 3 -->
+    <a class="module" href="advanced_vqa_part_3.html" style="border-color:rgba(249,115,22,.2)" onmouseover="this.style.cssText='border-color:rgba(249,115,22,.5);box-shadow:0 12px 40px rgba(249,115,22,.1);transform:translateY(-3px);background:var(--surface);text-decoration:none;color:inherit'" onmouseout="this.style.cssText='border-color:rgba(249,115,22,.2);background:var(--surface);text-decoration:none;color:inherit'">
+      <div class="mod-num" style="color:#f97316">Module 06</div>
+      <div class="mod-icon">⬡</div>
+      <div class="mod-progress"><div style="height:2px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#c2410c,#f97316)"></div></div></div>
+      <div class="mod-title" style="margin-top:18px">Advanced VQA — Part 3: Chemistry &amp; Industrial Applications</div>
+      <div class="mod-desc">EV charging station QUBO formulation, Ising pipeline, truck routing, D-Wave quantum annealing, adiabatic theorem, dynamical decoupling, Trotterization, and Sampling Quantum Diagonalization.</div>
+      <div class="mod-meta">
+        <div class="mod-pills">
+          <span class="pill" style="color:#f97316;border-color:rgba(249,115,22,.25);background:rgba(249,115,22,.06)">50 questions</span>
+          <span class="pill" style="color:#f97316;border-color:rgba(249,115,22,.25);background:rgba(249,115,22,.06)">Annealing · SQD</span>
+        </div>
+        <span style="font-family:var(--mono);font-size:14px;color:#f97316">→</span>
+      </div>
+    </a>
+
+    <!-- 07 VQE Applications -->
+    <a class="module mod-green" href="vqa_applications.html">
+      <div class="mod-num c-green">Module 07</div>
+      <div class="mod-icon">⚡</div>
+      <div class="mod-progress"><div class="mod-fill"></div></div>
+      <div class="mod-title">VQE — Applications: Quantum Optimization &amp; Energy</div>
+      <div class="mod-desc">From VQE and QAOA foundations to the Unit Commitment Problem. Covers MILP, QUBO, Ising mapping, penalty factors, sparse connectivity, and hardware benchmarking.</div>
+      <div class="mod-meta">
+        <div class="mod-pills"><span class="pill p-green">50 questions</span><span class="pill p-green">QAOA · UCP · QUBO</span></div>
+        <span class="mod-arrow c-green">→</span>
+      </div>
+    </a>
+
+    
+
+    <!-- 08 Quantum Devices -->
+    <a class="module" href="quantum_computing_in_current_devices.html" style="border-color:rgba(129,140,248,.2)" onmouseover="this.style.cssText='border-color:rgba(129,140,248,.5);box-shadow:0 12px 40px rgba(129,140,248,.1);transform:translateY(-3px);background:var(--surface);text-decoration:none;color:inherit'" onmouseout="this.style.cssText='border-color:rgba(129,140,248,.2);background:var(--surface);text-decoration:none;color:inherit'">
+      <div class="mod-num" style="color:#818cf8">Module 08</div>
+      <div class="mod-icon">⬟</div>
+      <div class="mod-progress"><div style="height:2px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#4338ca,#818cf8)"></div></div></div>
+      <div class="mod-title" style="margin-top:18px">Quantum Algorithms on Current Devices — State of the Art &amp; Challenges</div>
+      <div class="mod-desc">Hardware stack, qubit topology, Josephson junctions, superposition, entanglement, interference, QUBO, QAOA, VQE, SQD, quantum-centric supercomputing, quantum kernels, and real-world applications.</div>
+      <div class="mod-meta">
+        <div class="mod-pills">
+          <span class="pill" style="color:#818cf8;border-color:rgba(129,140,248,.25);background:rgba(129,140,248,.06)">50 questions</span>
+          <span class="pill" style="color:#818cf8;border-color:rgba(129,140,248,.25);background:rgba(129,140,248,.06)">QAOA · SQD · QML</span>
+        </div>
+        <span style="font-family:var(--mono);font-size:14px;color:#818cf8">→</span>
+      </div>
+    </a>
+    <!-- 09 Introduction to PennyLane -->
+    <a class="module" href="introduction_to_pennylane.html" style="border-color:rgba(132,225,90,.2)" onmouseover="this.style.cssText='border-color:rgba(132,225,90,.5);box-shadow:0 12px 40px rgba(132,225,90,.1);transform:translateY(-3px);background:var(--surface);text-decoration:none;color:inherit'" onmouseout="this.style.cssText='border-color:rgba(132,225,90,.2);background:var(--surface);text-decoration:none;color:inherit'">
+      <div class="mod-num" style="color:#84e15a">Module 09</div>
+      <div class="mod-icon">⬟</div>
+      <div class="mod-progress"><div style="height:2px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#84e15a,var(--limegreen))"></div></div></div>
+      <div class="mod-title" style="margin-top:18px">Introduction to PennyLane</div>
+      <div class="mod-desc">Pennylane, Programming model, and its applications in quantum machine learning.</div>
+      <div class="mod-meta">
+        <div class="mod-pills">
+          <span class="pill" style="color:#84e15a;border-color:rgba(132,225,90,.25);background:rgba(132,225,90,.06)">50 questions</span>
+          <span class="pill" style="color:#84e15a;border-color:rgba(132,225,90,.25);background:rgba(132,225,90,.06)">Python . PennyLane . QML</span>
+        </div>
+        <span style="font-family:var(--mono);font-size:14px;color:#84e15a">→</span>
+      </div>
+    </a>
+
+    <a class="module" href="qaoa.html" style="border-color:rgba(132,225,90,.2)" onmouseover="this.style.cssText='border-color:rgba(132,225,90,.5);box-shadow:0 12px 40px rgba(132,225,90,.1);transform:translateY(-3px);background:var(--surface);text-decoration:none;color:inherit'" onmouseout="this.style.cssText='border-color:rgba(132,225,90,.2);background:var(--surface);text-decoration:none;color:inherit'">
+      <div class="mod-num" style="color:#5aa4e1">Module 10</div>
+      <div class="mod-icon">⬟</div>
+      <div class="mod-progress"><div style="height:2px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#84e15a,var(--limegreen))"></div></div></div>
+      <div class="mod-title" style="margin-top:18px">Quantum Approximation Optimization Algorithm</div>
+      <div class="mod-desc">From combinatorial optimization and Max-XOR-SAT through Hamiltonians, adiabatic evolution, QAOA, interference, Fourier space, and sparse encoding.</div>
+      <div class="mod-meta">
+        <div class="mod-pills">
+          <span class="pill" style="color:#5aa4e1;border-color:rgba(124, 90, 225, 0.25);background:rgba(132,225,90,.06)">50 questions</span>
+          <span class="pill" style="color:#5aa4e1;border-color:rgba(90, 112, 225, 0.25);background:rgba(132,225,90,.06)">Python . PennyLane . QML</span>
+        </div>
+        <span style="font-family:var(--mono);font-size:14px;color:#705ae1">→</span>
+      </div>
+    </a>
+    <a class="module" href="qaoa_2.html" style="border-color:rgba(132,225,90,.2)" onmouseover="this.style.cssText='border-color:rgba(132,225,90,.5);box-shadow:0 12px 40px rgba(132,225,90,.1);transform:translateY(-3px);background:var(--surface);text-decoration:none;color:inherit'" onmouseout="this.style.cssText='border-color:rgba(132,225,90,.2);background:var(--surface);text-decoration:none;color:inherit'">
+      <div class="mod-num" style="color:#5aa4e1">Module 10A</div>
+      <div class="mod-icon">⬟</div>
+      <div class="mod-progress"><div style="height:2px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#84e15a,var(--limegreen))"></div></div></div>
+      <div class="mod-title" style="margin-top:18px">Quantum Approximation Optimization Algorithm - Deep Dive</div>
+      <div class="mod-desc">From Hamiltonians and QUBO through full circuit architecture, Trotterization, adiabatic theory, performance guarantees, and advanced techniques including CVaR, warm starting, and parameter concentration.</div>
+      <div class="mod-meta">
+        <div class="mod-pills">
+          <span class="pill" style="color:#5aa4e1;border-color:rgba(124, 90, 225, 0.25);background:rgba(132,225,90,.06)">50 questions</span>
+          <span class="pill" style="color:#5aa4e1;border-color:rgba(90, 112, 225, 0.25);background:rgba(132,225,90,.06)">Python . PennyLane . QML</span>
+        </div>
+        <span style="font-family:var(--mono);font-size:14px;color:#705ae1">→</span>
+      </div>
+    </a>
+<a class="module" href="qiskit_intro.html" style="border-color:rgba(132,225,90,.2)" onmouseover="this.style.cssText='border-color:rgba(132,225,90,.5);box-shadow:0 12px 40px rgba(132,225,90,.1);transform:translateY(-3px);background:var(--surface);text-decoration:none;color:inherit'" onmouseout="this.style.cssText='border-color:rgba(132,225,90,.2);background:var(--surface);text-decoration:none;color:inherit'">
+      <div class="mod-num" style="color:#5aa4e1">Bonus Module</div>
+      <div class="mod-icon">⬟</div>
+      <div class="mod-progress"><div style="height:2px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#84e15a,var(--limegreen))"></div></div></div>
+      <div class="mod-title" style="margin-top:18px">Introduction to
+Quantum Programming with Qiskit</div>
+      <div class="mod-desc">From elementary workflow and the Qiskit ecosystem through registers, gates, Bell states, GHZ circuits, parameterization, and hardware noise. Includes live code-input questions.</div>
+      <div class="mod-meta">
+        <div class="mod-pills">
+          <span class="pill" style="color:#5aa4e1;border-color:rgba(124, 90, 225, 0.25);background:rgba(132,225,90,.06)">50 questions</span>
+          <span class="pill" style="color:#5aa4e1;border-color:rgba(90, 112, 225, 0.25);background:rgba(132,225,90,.06)">Python . PennyLane . QML</span>
+        </div>
+        <span style="font-family:var(--mono);font-size:14px;color:#705ae1">→</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="divider"><div class="divider-line"></div><div class="divider-text">How to use</div><div class="divider-line"></div></div>
+  <div class="how">
+    <div class="step"><span class="step-n">01</span><div class="step-body"><strong>Attend the lecture</strong>Watch or read the lecture material before attempting a quiz.</div></div>
+    <div class="step"><span class="step-n">02</span><div class="step-body"><strong>First pass</strong>Go through all 50 questions. Previews set context; explanations clarify mistakes.</div></div>
+    <div class="step"><span class="step-n">03</span><div class="step-body"><strong>Second pass</strong>Revisit the module. Focus on questions you got wrong the first time.</div></div>
+    <div class="step"><span class="step-n">04</span><div class="step-body"><strong>Third pass</strong>Full mastery. Aim for 90%+ before moving to the next module.</div></div>
+  </div>
+
+  <footer>
+    <div class="footer-brand">Quantum Computing · Lecture Series</div>
+    <div class="footer-love">
+      Made with <span>♥</span> by <strong>LOKI1512</strong><br>for Quantum Enthusiasts
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
