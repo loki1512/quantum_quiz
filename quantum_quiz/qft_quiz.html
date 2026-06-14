@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QFT & QPE — Quantum Professor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a12; --surface: #0a1525; --border: #1a3050;
+    --cyan: #00d4ff; --cyan-dim: #0090b3; --gold: #f0c040;
+    --green: #39e07a; --red: #ff5566;
+    --text: #c8dff0; --text-dim: #6a8aaa; --text-bright: #e8f4ff;
+    --mono: 'Space Mono', monospace; --serif: 'Crimson Pro', Georgia, serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background:var(--bg); color:var(--text); font-family:var(--serif); font-size:18px; line-height:1.7; min-height:100vh; overflow-x:hidden; display:flex; flex-direction:column; align-items:center; }
+
+  .bg-grid { position:fixed; inset:0; z-index:0; background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px); background-size:60px 60px; pointer-events:none; }
+  .bg-glow { position:fixed; z-index:0; pointer-events:none; border-radius:50%; filter:blur(130px); }
+  .bg-glow-1 { width:700px; height:700px; background:radial-gradient(circle,rgba(0,100,180,.13),transparent 70%); top:-250px; left:-250px; }
+  .bg-glow-2 { width:500px; height:500px; background:radial-gradient(circle,rgba(0,212,255,.07),transparent 70%); bottom:0; right:-150px; animation:bgPulse 9s ease-in-out infinite alternate; }
+  @keyframes bgPulse { from{opacity:.5}to{opacity:1} }
+
+  /* TOP BAR */
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(5,10,18,.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); padding:11px 28px; display:flex; align-items:center; gap:16px; }
+  .home-btn { font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; padding:4px 10px; border:1px solid var(--border); border-radius:2px; white-space:nowrap; transition:all .15s; flex-shrink:0; }
+  .home-btn:hover { color:var(--cyan); border-color:rgba(0,212,255,.35); }
+  .bar-label { font-family:var(--mono); font-size:10px; color:var(--cyan); letter-spacing:.15em; text-transform:uppercase; white-space:nowrap; min-width:90px; }
+  .progress-track { flex:1; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .progress-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--cyan-dim),var(--cyan)); transition:width .5s cubic-bezier(.4,0,.2,1); box-shadow:0 0 8px var(--cyan); }
+  .score-tag { font-family:var(--mono); font-size:10px; color:var(--gold); white-space:nowrap; min-width:55px; text-align:right; }
+
+  /* STAGE */
+  .stage { position:relative; z-index:1; width:100%; max-width:660px; padding:110px 24px 60px; min-height:100vh; display:flex; flex-direction:column; justify-content:center; }
+
+  /* CARD */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:36px 36px 28px; animation:cardIn .32s cubic-bezier(.4,0,.2,1); }
+  @keyframes cardIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  .card.out { animation:cardOut .22s cubic-bezier(.4,0,.2,1) forwards; }
+  @keyframes cardOut { to{opacity:0;transform:translateY(-14px)} }
+
+  /* CARD HEADER */
+  .card-header { display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+  .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .card-kind { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; }
+  .card-num { font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-left:auto; }
+
+  /* PREVIEW */
+  .preview-dot  { background:var(--cyan); box-shadow:0 0 8px var(--cyan); }
+  .preview-kind { color:var(--cyan); }
+  .preview-body { font-family:var(--serif); font-size:1.08rem; font-style:italic; color:var(--text); line-height:1.75; margin-bottom:28px; }
+
+  /* QUESTION */
+  .question-dot  { background:var(--gold); box-shadow:0 0 8px var(--gold); }
+  .question-kind { color:var(--gold); }
+  .question-body { font-family:var(--serif); font-size:1.1rem; color:var(--text-bright); line-height:1.65; margin-bottom:22px; }
+
+  /* OPTIONS */
+  .options { display:flex; flex-direction:column; gap:9px; margin-bottom:6px; }
+  .option { display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border:1px solid var(--border); border-radius:4px; cursor:pointer; background:transparent; color:var(--text); font-family:var(--serif); font-size:.97rem; text-align:left; line-height:1.5; width:100%; transition:border-color .14s,background .14s,color .14s; }
+  .option:hover:not(:disabled) { border-color:var(--cyan-dim); background:rgba(0,212,255,.05); color:var(--text-bright); }
+  .option:disabled { cursor:default; }
+  .opt-letter { font-family:var(--mono); font-size:10px; color:var(--text-dim); border:1px solid var(--border); border-radius:2px; padding:2px 7px; flex-shrink:0; margin-top:2px; transition:all .14s; }
+  .option:hover:not(:disabled) .opt-letter { border-color:var(--cyan); color:var(--cyan); }
+  .option.opt-correct { border-color:var(--green); background:rgba(57,224,122,.09); color:var(--text-bright); }
+  .option.opt-correct .opt-letter { border-color:var(--green); color:var(--green); background:rgba(57,224,122,.15); }
+  .option.opt-wrong { border-color:var(--red); background:rgba(255,85,102,.09); color:var(--text-bright); }
+  .option.opt-wrong .opt-letter { border-color:var(--red); color:var(--red); background:rgba(255,85,102,.15); }
+  .option.opt-reveal { border-color:rgba(57,224,122,.4); background:rgba(57,224,122,.04); }
+  .option.opt-reveal .opt-letter { border-color:var(--green); color:var(--green); }
+
+  /* RESULT */
+  .result-dot-correct { background:var(--green); box-shadow:0 0 8px var(--green); }
+  .result-dot-wrong   { background:var(--red);   box-shadow:0 0 8px var(--red); }
+  .result-kind-correct{ color:var(--green); }
+  .result-kind-wrong  { color:var(--red); }
+  .chosen-row { display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border-radius:4px; border:1px solid; margin-bottom:12px; font-family:var(--serif); font-size:.97rem; line-height:1.5; }
+  .chosen-row.correct { border-color:var(--green); background:rgba(57,224,122,.08); color:var(--text-bright); }
+  .chosen-row.wrong   { border-color:var(--red);   background:rgba(255,85,102,.08); color:var(--text-bright); }
+  .chosen-row.reveal  { border-color:rgba(57,224,122,.4); background:rgba(57,224,122,.05); color:var(--text-bright); }
+  .row-icon { flex-shrink:0; font-size:.95rem; margin-top:1px; }
+  .exp-wrap { margin-top:18px; padding-top:18px; border-top:1px solid var(--border); }
+  .exp-label { font-family:var(--mono); font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .exp-label::before { content:'⚛'; }
+  .exp-text { font-size:.93rem; color:var(--text); font-style:italic; line-height:1.65; }
+
+  /* BUTTON */
+  .btn-row { display:flex; justify-content:flex-end; margin-top:26px; }
+  .btn { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:11px 24px; border:1px solid var(--cyan); background:transparent; color:var(--cyan); border-radius:3px; cursor:pointer; transition:all .18s; display:flex; align-items:center; gap:8px; }
+  .btn:hover { background:var(--cyan); color:var(--bg); box-shadow:0 0 20px rgba(0,212,255,.3); }
+  .btn .arr { transition:transform .18s; }
+  .btn:hover .arr { transform:translateX(4px); }
+
+  /* INTRO */
+  .intro { text-align:center; animation:cardIn .35s ease; }
+  .intro-tag { font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--cyan); margin-bottom:20px; display:flex; align-items:center; justify-content:center; gap:12px; }
+  .intro-tag::before,.intro-tag::after { content:''; display:block; width:28px; height:1px; background:var(--cyan); }
+  .intro h1 { font-family:var(--serif); font-weight:300; font-size:clamp(1.9rem,5vw,3rem); color:var(--text-bright); line-height:1.2; margin-bottom:14px; letter-spacing:-.01em; }
+  .intro h1 em { color:var(--cyan); font-style:normal; font-weight:600; }
+  .intro p { font-size:.9rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:36px; line-height:1.7; max-width:420px; margin-left:auto; margin-right:auto; }
+
+  /* SUMMARY */
+  .summary { text-align:center; animation:cardIn .4s ease; }
+  .sum-tag { font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--cyan); margin-bottom:20px; }
+  .sum-score { font-family:var(--serif); font-weight:300; font-size:clamp(3.5rem,12vw,5.5rem); color:var(--text-bright); line-height:1; margin-bottom:6px; }
+  .sum-score span { color:var(--cyan); }
+  .sum-pct { font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-bottom:28px; }
+  .sum-msg { font-size:1.03rem; font-style:italic; color:var(--text); line-height:1.7; max-width:440px; margin:0 auto 36px; }
+  .sum-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-reset { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:12px 28px; border:1px solid var(--cyan); background:transparent; color:var(--cyan); border-radius:3px; cursor:pointer; transition:all .2s; }
+  .btn-reset:hover { background:var(--cyan); color:var(--bg); box-shadow:0 0 20px rgba(0,212,255,.35); }
+  .btn-home { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:12px 28px; border:1px solid var(--border); background:transparent; color:var(--text-dim); border-radius:3px; cursor:pointer; transition:all .2s; text-decoration:none; display:inline-block; }
+  .btn-home:hover { border-color:var(--text-dim); color:var(--text); }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="topbar">
+  <a class="home-btn" href="index.html">← Home</a>
+  <div class="bar-label" id="bar-label">QFT &amp; QPE</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  <div class="score-tag" id="score-tag">0 / 50</div>
+</div>
+
+<div class="stage"><div id="slot"></div></div>
+
+<script>
+const L = ['A','B','C','D'];
+const data = [
+  {p:"Before diving into quantum mechanics, it helps to remember what the classical Fourier Transform does. It translates data from one domain to another to reveal hidden patterns.",q:"What is the primary purpose of the classical discrete Fourier transform (DFT)?",o:["To convert a signal from the time domain to the frequency domain.","To amplify the noise in a classical signal.","To sort a list of integers from lowest to highest.","To encrypt data using prime factorization."],a:0,e:"The classical DFT decomposes a sequence of values into components of different frequencies, transitioning from the time/spatial domain into the frequency domain."},
+  {p:"The Quantum Fourier Transform (QFT) is the quantum analogue of the classical DFT. Instead of operating on classical arrays, it operates on a specific quantum property.",q:"On what quantum property does the QFT directly operate?",o:["The physical temperature of the qubits.","The probability amplitudes of a quantum state.","The measurement outcomes of classical bits.","The entanglement entropy of the environment."],a:1,e:"The QFT performs a Fourier transform on the probability amplitudes of a quantum state, redistributing them according to the Fourier basis."},
+  {p:"Since QFT operates on quantum states, we must represent our classical data vector length N in terms of qubits n.",q:"If a quantum system has n qubits, how many data points N does the corresponding state vector hold for the QFT?",o:["N = n","N = n²","N = 2ⁿ","N = log₂(n)"],a:2,e:"An n-qubit system has 2ⁿ computational basis states, allowing the QFT to operate on a state vector of length N = 2ⁿ."},
+  {p:"Classical DFT requires roughly O(N²) or O(N log N) (using Fast Fourier Transform) operations. We want to know how QFT compares.",q:"What is the computational complexity of the QFT in terms of the number of logic gates required for n qubits?",o:["O(2ⁿ)","O(n²)","O(n log n)","O(n)"],a:1,e:"The QFT circuit requires O(n²) gates (Hadamards and controlled-phase rotations), an exponential speedup over the classical FFT which takes O(n·2ⁿ) steps."},
+  {p:"Despite this massive speedup, there is a catch regarding how we can access the transformed data.",q:"Why can't the QFT be used as a direct, faster replacement for classical FFT on classical data?",o:["Quantum gates are too slow to execute.","We cannot read out all the amplitudes directly due to wave function collapse upon measurement.","The QFT only works on pure sine waves.","The QFT destroys the quantum computer."],a:1,e:"Measuring a quantum state collapses it to a single basis state. We only get one outcome, not the entire array of transformed amplitudes."},
+  {p:"Let's look at the mathematical definition of QFT. It maps a basis state |j⟩ to a superposition of all states |k⟩.",q:"In the QFT of state |j⟩, what is the phase factor applied to each basis state |k⟩?",o:["e^(2πijk/2ⁿ)","e^(iπjk)","e^(−jk/n)","(−1)^(jk)"],a:0,e:"The QFT maps |j⟩ → (1/√2ⁿ) Σ e^(2πijk/2ⁿ) |k⟩."},
+  {p:"To build the QFT out of gates, we need to understand how the phase e^(2πijk/2ⁿ) can be factored.",q:"The product phase e^(2πijk/2ⁿ) can be decomposed into a tensor product of single-qubit states. What does this imply for the resulting state?",o:["It is highly entangled.","It is unentangled (a product state).","It collapses immediately.","It is an exact duplicate of the input state."],a:1,e:"The output of a QFT acting on a single computational basis state is completely separable (a product state) — no entanglement between output qubits."},
+  {p:"Because the output is a product state, we can look at what happens to the very first qubit.",q:"When applying QFT to |j⟩, what state does the most significant qubit (qubit 1) end up in?",o:["|0⟩ + |1⟩","|0⟩ + e^(2πi·0.jₙ)|1⟩","|0⟩ + e^(2πi·0.j₁)|1⟩","|j₁⟩"],a:1,e:"The state of the first qubit depends on the least significant bit of the input, carrying the phase 0.jₙ (in binary fraction notation)."},
+  {p:"The first output qubit depends on the last input bit (jₙ). This requires a specific operation at the end of the circuit.",q:"Because the standard QFT circuit outputs the qubits in reverse order, what gates are typically placed at the end of the circuit?",o:["CNOT gates","Hadamard gates","SWAP gates","Pauli-X gates"],a:2,e:"SWAP gates are used to reverse the order of the qubits back to the standard convention."},
+  {p:"Let's build the circuit. The first step involves putting a qubit into an equal superposition.",q:"Which standard quantum gate begins the QFT process on a single qubit, creating a superposition state?",o:["Pauli-X","Hadamard (H)","Phase (S)","Toffoli"],a:1,e:"The Hadamard gate creates an equal superposition |0⟩ + |1⟩, which is the foundation of the Fourier basis."},
+  {p:"After the Hadamard gate, we need to apply specific phases depending on the states of the other qubits.",q:"What type of gate is used to apply the phase fractions e^(2πi/2ᵐ) in the QFT circuit?",o:["Controlled-Phase (Rₖ) gates","Controlled-NOT (CNOT) gates","SWAP gates","Pauli-Z gates"],a:0,e:"Controlled-Phase gates (Rₖ) apply a phase rotation to the target qubit only if the control qubit is in the |1⟩ state."},
+  {p:"The angle of rotation in these Rₖ gates decreases as the distance between the qubits increases.",q:"If the rotation gate Rₖ applies a phase of 2π/2ᵏ, what is the phase applied by R₂?",o:["π","π/2","π/4","2π"],a:1,e:"For k=2, the phase is 2π/2² = 2π/4 = π/2."},
+  {p:"Think about the structure: Qubit 1 gets a Hadamard, then controlled phases from all lower qubits. Then we move to Qubit 2.",q:"How many controlled-phase gates are applied to the second qubit in an n-qubit QFT circuit?",o:["n","n−1","n−2","1"],a:2,e:"The second qubit gets a Hadamard, followed by controlled-phase gates from the remaining n−2 qubits below it."},
+  {p:"For large n, some of these rotations (Rₖ for large k) become incredibly small.",q:"What is the practical engineering implication of the incredibly small angle rotations required in a large QFT circuit?",o:["They require infinite energy to perform.","They are highly susceptible to noise and hardware errors.","They cause the qubits to overheat.","They reverse the flow of time in the circuit."],a:1,e:"Very small phase rotations are difficult to implement precisely on physical hardware and are easily overwhelmed by noise."},
+  {p:"To combat this noise, researchers developed a modified version of the QFT.",q:'What is the "Approximate QFT" (AQFT)?',o:["A classical approximation of the QFT.","A QFT where all Hadamard gates are removed.","A QFT where controlled-phase gates with rotation angles below a threshold are discarded.","A QFT that guesses the phase without doing any gates."],a:2,e:"The Approximate QFT discards very small phase rotations (large k), reducing gate count and noise while maintaining high algorithmic accuracy."},
+  {p:"Let's look at the inverse operation. If QFT maps computational basis to Fourier basis, what does the Inverse QFT (QFT†) do?",q:"The Inverse QFT maps a state from the Fourier basis back to what?",o:["The Bell basis","The computational basis","A completely mixed state","The continuous position basis"],a:1,e:"The QFT† reverses the QFT, taking states defined by specific phase gradients (Fourier basis) back to standard binary states (computational basis)."},
+  {p:"To build the Inverse QFT circuit, we must reverse the standard QFT circuit.",q:"How do the gates of the QFT† circuit differ from the standard QFT?",o:["It uses X gates instead of Hadamards.","It uses the same gates run in reverse order, with negative phase rotation angles.","It replaces all qubits with classical bits.","There is no difference; QFT is its own inverse."],a:1,e:"To invert a unitary circuit, we apply the operations in reverse order and take their adjoints (which flips the sign of the phase angles)."},
+  {p:"Now we transition to Quantum Phase Estimation (QPE). The goal is to estimate a phase — but phase of what?",q:"QPE estimates the phase θ associated with what mathematical entity?",o:["A classical integer","An eigenvalue of a given unitary operator U","The noise floor of the quantum processor","A probability distribution function"],a:1,e:"If |ψ⟩ is an eigenvector of U, then U|ψ⟩ = e^(2πiθ)|ψ⟩. QPE aims to find this θ."},
+  {p:"QPE requires two registers of qubits. Let's look at the first one.",q:'What is the purpose of the first register (the "counting" or "evaluation" register) in QPE?',o:["To store the eigenvector |ψ⟩.","To act as a classical memory buffer.","To store the estimated phase θ in binary.","To measure the temperature of the second register."],a:2,e:"The first register contains t qubits initialized to |0⟩, which will eventually hold the bits representing the phase fraction."},
+  {p:"The second register has a different job.",q:'What must be loaded into the second register (the "target" register) at the start of QPE?',o:["An equal superposition state","The eigenvector |ψ⟩ of the operator U","A string of classical ones","An entangled Bell pair"],a:1,e:"The target register holds the eigenvector |ψ⟩ upon which the unitary operator U acts."},
+  {p:"The first step of QPE alters the first register.",q:"How are the qubits in the first register initialized in step 1 of QPE?",o:["They are measured.","Pauli-X gates are applied to flip them to |1⟩.","Hadamard gates are applied to put them in equal superposition.","They are entangled with the environment."],a:2,e:"Hadamards are applied to all qubits in the counting register to create an equal superposition of all possible states."},
+  {p:"Now we must link the first register to the second register using the unitary operator U.",q:"What kind of operations are used to transfer the phase from the eigenvector in register 2 into the amplitudes of register 1?",o:["Controlled-U operations (CU)","Uncontrolled SWAP gates","Classical IF statements","Measurement operations"],a:0,e:'Controlled-U operations apply the unitary to register 2 conditional on the state of the qubits in register 1, "kicking back" the phase to register 1.'},
+  {p:'This "kickback" effect is crucial. It relies on a specific property of eigenvectors.',q:"What happens to the control qubit when a controlled-U is applied, and the target is an eigenvector of U with eigenvalue e^(iφ)?",o:["The target qubit flips.","The eigenvalue e^(iφ) moves to the control qubit's amplitude as a relative phase.","Both qubits collapse to |0⟩.","The control qubit becomes entangled with the target."],a:1,e:"This is phase kickback. Because the target is an eigenvector, U just multiplies it by a scalar. If the control is |1⟩, this scalar becomes a relative phase on the control qubit."},
+  {p:"In QPE, we don't just apply CU once. We apply powers of U.",q:"If the j-th qubit in the first register controls a unitary, to what power is U raised?",o:["Uʲ","U^(2ʲ)","U^(1/j)","U^(j²)"],a:1,e:"The j-th qubit (counting from 0) controls the operation U^(2ʲ), ensuring the phase accumulates according to binary place value."},
+  {p:"Think about the state of the first register after all the controlled-U^(2ʲ) operations.",q:"After the controlled unitary operations, what state is the first register in?",o:["A classical bit string representing the phase.","The computational basis state |θ⟩.","A Fourier-transformed state containing the phase θ in its relative amplitudes.","The state |00...0⟩."],a:2,e:"The phase has been kicked back into the amplitudes of the first register, creating a state that looks exactly like the output of a QFT for the value θ."},
+  {p:"Since the first register is now in the Fourier basis, we need a way to read it classically.",q:"What algorithm is applied to the first register to convert the phase information into measurable computational basis states?",o:["Grover's Search","Quantum Phase Estimation","Quantum Fourier Transform (QFT)","Inverse Quantum Fourier Transform (QFT†)"],a:3,e:"Since the register is in the Fourier domain, we apply the Inverse QFT to bring it back to the computational domain, revealing the binary digits of θ."},
+  {p:"Let's assume the phase θ can be expressed exactly in a limited number of binary decimal places.",q:"If θ can be expressed exactly with t bits, what happens when we measure the first register?",o:["We get a distribution of results centered around θ.","We measure the exact binary representation of θ with 100% probability.","The measurement yields 0.","The system gives a random number."],a:1,e:"If the phase exactly matches the binary fractions available to the t qubits, the Inverse QFT perfectly interferes to yield the exact answer with probability 1."},
+  {p:"What if θ cannot be written exactly with t bits? (e.g., 1/3 in binary).",q:"If the true phase θ is not an exact t-bit fraction, what is the measurement outcome of QPE?",o:["The exact phase is revealed anyway.","The algorithm fails and must be reset.","You measure the best t-bit approximation of θ with high probability.","The probability spreads equally across all possible states."],a:2,e:"If θ is inexact, the amplitudes do not perfectly cancel, resulting in a high probability of measuring the closest t-bit binary fraction."},
+  {p:"Since there is a chance of measuring the wrong phase, we want to improve our odds.",q:"How can you increase the probability of measuring an accurate approximation of an inexact phase?",o:["Run the algorithm colder.","Increase the number of qubits (t) in the evaluation register.","Use fewer qubits to reduce noise.","Replace Hadamard gates with X gates."],a:1,e:"Adding more qubits to the counting register increases the resolution of the binary fraction, tightening the probability distribution around the correct value."},
+  {p:"Let's look at the math for choosing t.",q:"If you want to estimate θ to n bits of precision with probability of success 1−ε, how many qubits t do you roughly need?",o:["t = n + ⌈log₂(2 + 1/(2ε))⌉","t = n × ε","t = 2ⁿ","t = n / ε"],a:0,e:"This standard formula ensures enough bits for the precision (n) plus buffer qubits to keep the failure probability (ε) small."},
+  {p:"Now that we have the phase, why do we care? One major application uses QPE to factor numbers.",q:"Which famous quantum algorithm relies on QPE as a subroutine to find the period of a modular exponential function?",o:["Grover's Algorithm","Shor's Algorithm","VQE (Variational Quantum Eigensolver)","BB84 Protocol"],a:1,e:"Shor's algorithm uses QPE to find the period of f(x) = aˣ mod N, which is the key to factoring large numbers."},
+  {p:"In Shor's algorithm, what acts as the unitary operator U for the Phase Estimation subroutine?",q:"In the context of order finding (Shor's), what is the unitary U?",o:["U|y⟩ = |y+1⟩","U|y⟩ = |a·y mod N⟩","U|y⟩ = |y² mod N⟩","U|y⟩ = |−y⟩"],a:1,e:"The unitary applies modular multiplication. The eigenvalues of this operator contain the period of the function."},
+  {p:"QPE isn't just for factoring — it has massive implications for chemistry.",q:"How is QPE used in quantum chemistry algorithms?",o:["To simulate the physical temperature of molecules.","To find the exact ground state energy of a molecular Hamiltonian.","To draw the 3D structure of the molecule.","To optimize the chemical synthesis pathway."],a:1,e:"By exponentiating the molecular Hamiltonian H to form U = e^(−iHt), QPE measures the phase corresponding to the energy eigenvalues (like the ground state)."},
+  {p:"While QPE is powerful for chemistry, it has a drawback for near-term devices.",q:"Why is full QPE currently difficult to implement for large molecules on today's NISQ devices?",o:["Molecules don't obey quantum mechanics.","The required circuit depth is extremely long, leading to decoherence before completion.","NISQ devices do not have Hadamard gates.","It requires too many classical supercomputers."],a:1,e:"QPE requires many controlled-U operations, creating very deep circuits. On noisy devices, the quantum state decoheres before the algorithm finishes."},
+  {p:"Because of this limitation, researchers use alternatives.",q:"Which algorithm is considered the near-term, shallower-circuit alternative to QPE for finding ground state energies?",o:["Grover's Search","Quantum Key Distribution","Variational Quantum Eigensolver (VQE)","QAOA"],a:2,e:"VQE is a hybrid classical-quantum algorithm that uses parameterized shallow circuits to estimate energies, viable for NISQ devices where deep QPE circuits fail."},
+  {p:"Let's look closer at the phase θ. It is represented as a binary fraction 0.θ₁θ₂...θₜ.",q:"What does the binary fraction 0.110 represent in standard decimal base-10?",o:["1.10","0.75","0.375","0.875"],a:1,e:"0.110 in binary is 1/2 + 1/4 + 0/8 = 0.5 + 0.25 = 0.75."},
+  {p:"Imagine a QPE circuit where the unitary U applies a Z gate. The target state is |1⟩.",q:"If U = Z and the target state is |1⟩, what is the expected eigenvalue and corresponding phase θ?",o:["Eigenvalue −1, Phase θ = 0.5","Eigenvalue 1, Phase θ = 0","Eigenvalue −1, Phase θ = 1","Eigenvalue i, Phase θ = 0.25"],a:0,e:"Z|1⟩ = −1|1⟩. Since −1 = e^(iπ) = e^(2πi·0.5), the phase θ is 0.5."},
+  {p:"What happens if the target state is not a pure eigenvector, but a superposition of two eigenvectors?",q:"If the target register is initialized in α|ψ₁⟩ + β|ψ₂⟩, what happens upon measuring the counting register?",o:["The algorithm crashes.","You measure the average of their two phases.","You measure the phase of |ψ₁⟩ with probability |α|², or the phase of |ψ₂⟩ with probability |β|².","You measure 0."],a:2,e:"By linearity, the system enters an entangled state of phases and eigenvectors. Measuring the first register collapses it to one phase based on the input amplitude probabilities."},
+  {p:"This property allows QPE to be used to prepare eigenvectors.",q:"If you input an unknown state and measure a specific phase θ₁ in the counting register, what happens to the target register?",o:["It is destroyed.","It collapses into the eigenvector |ψ₁⟩ corresponding to θ₁.","It resets to |0⟩.","It remains in the original unknown superposition."],a:1,e:"Due to measurement collapse, obtaining the phase eigenvalue forces the target register to collapse into the corresponding eigenvector."},
+  {p:"Let's revisit the QFT circuit to understand its reversibility.",q:"Why must the QFT and QFT† operators be unitary matrices?",o:["Because they only operate on the number 1.","To ensure that the sum of the probabilities of all outcomes remains exactly 1.","Because they are classical algorithms.","So they can be simulated on a classical computer."],a:1,e:"All quantum gates (excluding measurement) must be unitary to preserve the normalization of the state vector — probabilities must sum to 100%."},
+  {p:"In a 3-qubit QFT, what is the value of the smallest phase rotation applied?",q:"What is the smallest controlled-phase rotation Rₖ angle in a 3-qubit QFT?",o:["π","π/2","π/4","π/8"],a:2,e:"The rotations are R₂ (π/2) and R₃ (π/4). So the smallest is π/4."},
+  {p:"Compare the structure of QFT to other transforms.",q:"Which classical transform is the mathematical equivalent of applying Hadamard gates to all qubits without any phase rotations?",o:["Walsh-Hadamard Transform","Fast Fourier Transform","Laplace Transform","Z-Transform"],a:0,e:"A layer of parallel Hadamard gates performs the Walsh-Hadamard Transform — related to but distinct from the DFT (it lacks complex phase rotations)."},
+  {p:"Consider the relationship between time and frequency in classical physics.",q:"In QFT, a state perfectly localized in the computational basis (e.g., |000⟩) maps to what kind of state in the Fourier basis?",o:["A perfectly localized state.","A completely uniform superposition of all states.","An entangled Bell state.","The zero vector."],a:1,e:"Just like a delta function in time has a flat frequency spectrum, a single computational basis state maps to an equal superposition with varying phases."},
+  {p:"Conversely, what happens if we input an equal superposition?",q:"Applying QFT to the equal superposition state (1/√N)Σ|x⟩ results in which computational basis state?",o:["|11...1⟩","|00...0⟩","A completely random state","An entangled state"],a:1,e:"Due to destructive interference of all phases, the transform of a flat superposition (DC signal, zero frequency) is just the state |00...0⟩."},
+  {p:"When we talk about QPE, we write U|ψ⟩ = e^(2πiθ)|ψ⟩. Why is the 2π included?",q:"Why is the eigenvalue written as e^(2πiθ) rather than just e^(iθ)?",o:["To make θ a value strictly between 0 and 1, representing a fractional rotation.","Because quantum gates only work in multiples of 2π.","To satisfy the Schrödinger equation.","It is an arbitrary historical convention."],a:0,e:"Using 2πiθ scales θ to the interval [0, 1), allowing it to be directly mapped to a binary fraction 0.θ₁θ₂... in the quantum registers."},
+  {p:"Let's look at a specific gate in the QPE circuit, U^(2ʲ).",q:"If U is the Pauli-X gate, what is U²?",o:["Pauli-Y","Pauli-Z","The Identity Matrix (I)","Hadamard"],a:2,e:"X · X = I. Applying a Pauli-X gate twice brings the state back to its original form."},
+  {p:"Building on the previous question, if U = X, how does this simplify QPE?",q:"If U = X, what happens to all the controlled-U^(2ʲ) operations for j ≥ 1?",o:["They become controlled-X gates.","They become identity operations (they do nothing).","They become controlled-Z gates.","They crash the circuit."],a:1,e:"Since X² = I, X⁴ = I, etc., all higher powers are just the Identity. Only the j=0 case (which is X¹) has any effect!"},
+  {p:"To implement U^(2ʲ) practically, we often don't physically repeat the U gate 2ʲ times.",q:"How are the U^(2ʲ) gates usually implemented in a real algorithm to avoid massive circuit depth?",o:["By running the circuit on a faster clock cycle.","By mathematically compiling and simplifying U^(2ʲ) into a single, equivalent custom gate.","They are omitted and estimated classically.","By increasing the temperature of the qubits."],a:1,e:"Algorithms compile U^(2ʲ) mathematically into a unitary matrix that can be decomposed into a few basic gates, rather than physically concatenating millions of U gates."},
+  {p:'In many texts, Phase Estimation is referred to as the "Quantum Eigenvalue Solver."',q:"What fundamental property of unitary matrices makes QPE capable of finding their eigenvalues?",o:["All unitary matrices are identical.","The eigenvalues of any unitary matrix always lie on the complex unit circle, taking the form e^(iφ).","Unitary matrices only have real eigenvalues.","Unitary matrices have no eigenvalues."],a:1,e:"By definition, unitary operators preserve norms, so their eigenvalues must have magnitude 1, meaning they can always be written as a complex phase e^(2πiθ)."},
+  {p:"We have reached the final question. Let us summarize the ultimate relationship between QFT and QPE.",q:"What is the fundamental role of the Inverse QFT in the Quantum Phase Estimation algorithm?",o:["It prepares the initial target state for the unitary operator.","It decodes the relative phase accumulated in the superposition into an easily measurable binary integer.","It checks the hardware for errors before the circuit runs.","It generates the unitary U."],a:1,e:"The phase kickback leaves phase information spread across the counting register's relative amplitudes; the QFT† interferes these so the phase peaks at the corresponding binary state, readable as a classical bit string."}
+];
+
+let qi=0, step='intro', score=0, answered=0;
+const slot=document.getElementById('slot'), fill=document.getElementById('prog-fill'), barLbl=document.getElementById('bar-label'), scorEl=document.getElementById('score-tag');
+
+function updateBar(){
+  fill.style.width=(answered/50*100)+'%';
+  scorEl.textContent=score+' / 50';
+  barLbl.textContent=step==='intro'?'QFT & QPE':step==='summary'?'Complete':`Q${qi+1} of 50`;
+}
+
+function swap(fn){
+  const cur=slot.firstChild;
+  if(cur){cur.classList.add('out');setTimeout(()=>{slot.innerHTML='';fn();},220);}
+  else fn();
+}
+
+function showIntro(){
+  step='intro';updateBar();
+  const d=document.createElement('div');d.className='intro';
+  d.innerHTML=`<div class="intro-tag">Module 01 · 50 Questions</div><h1>Foundations &amp; Applications of the<br><em>Quantum Fourier Transform</em></h1><p>Each preview sets the scene. Then choose your answer and read the explanation before moving on.</p><div class="btn-row" style="justify-content:center"><button class="btn" onclick="startQuiz()">Begin <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function startQuiz(){qi=0;score=0;answered=0;swap(()=>showPreview());}
+
+function showPreview(){
+  step='preview';updateBar();
+  const d=document.createElement('div');d.className='card';
+  d.innerHTML=`<div class="card-header"><span class="dot preview-dot"></span><span class="card-kind preview-kind">Preview</span><span class="card-num">Q${qi+1} of 50</span></div><div class="preview-body">${data[qi].p}</div><div class="btn-row"><button class="btn" onclick="swap(showQuestion)">Question <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function showQuestion(){
+  step='question';updateBar();
+  const item=data[qi];
+  const d=document.createElement('div');d.className='card';
+  const optHtml=item.o.map((o,oi)=>`<button class="option" id="opt${oi}" onclick="pick(${oi})"><span class="opt-letter">${L[oi]}</span><span>${o}</span></button>`).join('');
+  d.innerHTML=`<div class="card-header"><span class="dot question-dot"></span><span class="card-kind question-kind">Question ${qi+1} of 50</span></div><div class="question-body">${item.q}</div><div class="options">${optHtml}</div>`;
+  slot.appendChild(d);
+}
+
+function pick(oi){
+  const item=data[qi];
+  document.querySelectorAll('.option').forEach(b=>b.disabled=true);
+  const correct=item.a;
+  document.querySelectorAll('.option')[correct].classList.add(oi===correct?'opt-correct':'opt-reveal');
+  if(oi!==correct) document.querySelectorAll('.option')[oi].classList.add('opt-wrong');
+  setTimeout(()=>swap(()=>showResult(oi)),480);
+}
+
+function showResult(oi){
+  const item=data[qi];const ok=oi===item.a;
+  if(ok)score++;answered++;step='result';updateBar();
+  const d=document.createElement('div');d.className='card';
+  const dotCls=ok?'result-dot-correct':'result-dot-wrong';
+  const kindCls=ok?'result-kind-correct':'result-kind-wrong';
+  let rowsHtml=`<div class="chosen-row ${ok?'correct':'wrong'}"><span class="row-icon">${ok?'✓':'✗'}</span><span>${item.o[oi]}</span></div>`;
+  if(!ok) rowsHtml+=`<div class="chosen-row reveal"><span class="row-icon">✓</span><span><strong>Correct:</strong> ${item.o[item.a]}</span></div>`;
+  const isLast=qi===49;
+  d.innerHTML=`<div class="card-header"><span class="dot ${dotCls}"></span><span class="card-kind ${kindCls}">${ok?'Correct!':'Incorrect'}</span><span class="card-num">Q${qi+1} of 50</span></div>${rowsHtml}<div class="exp-wrap"><div class="exp-label">Explanation</div><div class="exp-text">${item.e}</div></div><div class="btn-row"><button class="btn" onclick="advance()">${isLast?'See Results':'Next'} <span class="arr">→</span></button></div>`;
+  slot.appendChild(d);
+}
+
+function advance(){
+  if(qi===49){swap(showSummary);return;}
+  qi++;swap(showPreview);
+}
+
+function showSummary(){
+  step='summary';updateBar();
+  const pct=Math.round(score/50*100);
+  const msgs=[[80,"Perfect score. You have achieved quantum enlightenment — the QFT holds no secrets from you."],[60,"Excellent. Your grasp of QFT and QPE is solid. A few more passes and the remaining subtleties will click."],[40,"Good foundation. The core concepts are clear. Revisit phase kickback and the role of the Inverse QFT."],[20,"A decent start. Return to the beginning — the logical chain of questions will make everything click."],[-1,"Quantum mechanics is notoriously difficult. Return to the fundamentals and try again — every pass reveals something new."]];
+  const msg=msgs.find(([t])=>pct>t)[1];
+  const d=document.createElement('div');d.className='summary';
+  d.innerHTML=`<div class="sum-tag">Module 01 Complete · QFT &amp; QPE</div><div class="sum-score">${score}<span>/50</span></div><div class="sum-pct">${pct}% correct</div><div class="sum-msg">${msg}</div><div class="sum-btns"><a class="btn-home" href="index.html">← All Modules</a><button class="btn-reset" onclick="swap(showIntro)">↺ Retake</button></div>`;
+  slot.appendChild(d);
+}
+
+showIntro();
+</script>
+<script src="focus-music.js"></script>
+</body>
+</html>
