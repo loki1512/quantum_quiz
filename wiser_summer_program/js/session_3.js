@@ -152,8 +152,8 @@ const QUESTIONS =
   {
     "id": 14,
     "type": "mcq",
-    "context": "When drawing circuits with parameters, the default display might show too many decimal places, cluttering the diagram.",
-    "question": "Which keyword argument in the drawing function limits the decimal precision displayed on the visualization?",
+    "context": "When drawing circuits with parameters, the default display might show no parameters on the gates, which we might want in the diagram.",
+    "question": "Which keyword argument in the drawing function diaplays parameters andlimits the decimal precision displayed on the visualization?",
     "options": [
       "A) precision",
       "B) decimals",
@@ -190,7 +190,7 @@ const QUESTIONS =
     "type": "type-in",
     "context": "We are preparing to add a 2-qubit gate. First, we must assign the target wires properly.",
     "question": "Write out the keyword argument assigning the list containing 0 and 1 to the parameter 'wires'. (Hint: wires=...)",
-    "answer": "wires=",
+    "answer": "wires=[0,1]",
     "explanation": "Great! Aside from multi-qubit gates, some gates are parameterized, meaning they accept continuous values."
   },
   {
@@ -321,8 +321,8 @@ const QUESTIONS =
     "id": 29,
     "type": "type-in",
     "context": "We want to initialize the high-performance C++ simulator for exactly two qubits.",
-    "question": "Call qp.device passing 'lightning.qubit' and the keyword argument wires=2. Assign it to 'dev_l'.",
-    "answer": "dev_l = qp.device(\"lightning.qubit\", wires=2)",
+    "question": "Call qp.device passing 'lightning.qubit' and the keyword argument wires=2. Assign it to 'dev_1'.",
+    "answer": "dev_1 = qp.device(\"lightning.qubit\", wires=2)",
     "explanation": "Device allocated. Now, as circuits grow complex, writing them gate-by-gate becomes tedious. PennyLane provides a solution for this."
   },
   {
@@ -343,8 +343,8 @@ const QUESTIONS =
     "id": 31,
     "type": "type-in",
     "context": "We need to embed the binary representation of the number 2, which requires three bits: 0, 1, 0.",
-    "question": "Call qp.BasisEmbedding passing the list as the first argument, and apply it to wires 0, 1, and 2 using the keyword argument wires=.",
-    "answer": "qp.BasisEmbedding(, wires=)",
+    "question": "Call qp.BasisEmbedding passing the list [0,1,0] as the first argument, and apply it to wires 0, 1, and 2 using the keyword argument wires=.",
+    "answer": "qp.BasisEmbedding([0,1,0], wires=[0,1,2])",
     "explanation": "The template masks the underlying gates. But what if we need to see exactly which gates were applied behind the scenes?"
   },
   {
@@ -364,9 +364,9 @@ const QUESTIONS =
   {
     "id": 33,
     "type": "type-in",
-    "context": "We want to see the low-level gates of 'circuit4' restricted to the Clifford+T universal gate set.",
-    "question": "Call qp.decompose passing 'circuit4' and the keyword argument gate_sets=qp.gate_sets.clifford_t. Assign the result to a variable 'decomp'.",
-    "answer": "decomp = qp.decompose(circuit4, gate_sets=qp.gate_sets.clifford_t)",
+    "context": "We want to see the low-level gates of 'circuit4' restricted to the CLIFFORD + T universal gate set.",
+    "question": "Call qp.decompose passing 'circuit4' and the keyword argument gate_set=qp.gate_sets.CLIFFORD_T. Assign the result to a variable 'decomp'.",
+    "answer": "decomp = qp.decompose(circuit4, gate_set=qp.gate_sets.CLIFFORD_T)",
     "explanation": "If decomposing large algorithms results in billions of gates, running them becomes impossible. How do we measure them without running?"
   },
   {
@@ -539,8 +539,8 @@ const QUESTIONS =
     "id": 48,
     "type": "type-in",
     "context": "REAL WORLD SCENARIO: Genomic Data Generation\n\n| Step | Phase | Component | Status |\n|---|---|---|---|\n| 3 | Model Def | IQP Layout | Defining Nested List... |\n\nWe define an IQP structure spanning single, double, and triple-qubit combinations.",
-    "question": "Create a variable 'gates' assigned to the following nested list: [,,].",
-    "answer": "gates = [,,]",
+    "question": "Create a variable 'gates' assigned to the following nested list: [[0],[0,1],[0,1,2],[1]].",
+    "answer": "gates = [[0],[0,1],[0,1,2],[1]]",
     "explanation": "The quantum architecture is defined. Now we must define what we actually measure at the end of the circuit."
   },
   {
@@ -561,8 +561,8 @@ const QUESTIONS =
     "id": 50,
     "type": "type-in",
     "context": "REAL WORLD SCENARIO: Genomic Data Generation\n\n| Step | Phase | Component | Status |\n|---|---|---|---|\n| 3 | Model Def | Observables | Storing Tensor... |\n\nWe measure Z on the first two qubits, and ignore the last two.",
-    "question": "Create a variable 'observables' assigned to a jnp.array containing one nested list: [].",
-    "answer": "observables = jnp.array([])",
+    "question": "Create a variable 'observables' assigned to a jnp.array containing one nested list: \n[[3,3,0,0],\n[3,0,3,0],\n[3,0,0,3],\n[0,3,3,0],\n[0,3,0,3],\n[0,0,3,3]].",
+    "answer": "observables = jnp.array([[3,3,0,0],[3,0,3,0],[3,0,0,3],[0,3,3,0],[0,3,0,3],[0,0,3,3]])",
     "explanation": "With the structure defined, we need initial weights to feed into the optimization loop."
   },
   {
@@ -605,16 +605,16 @@ const QUESTIONS =
     "id": 54,
     "type": "type-in",
     "context": "REAL WORLD SCENARIO: Genomic Data Generation\n\n| Step | Phase | Component | Status |\n|---|---|---|---|\n| 4 | Classical Setup| MC Samples | Assigning Count... |\n\nLet's define a healthy integer sample count to ensure statistical accuracy.",
-    "question": "Assign the integer 4000 to the variable '_samples'.",
-    "answer": "_samples = 4000",
+    "question": "Assign the integer 4000 to the variable 'n_samples'.",
+    "answer": "n_samples = 4000",
     "explanation": "Sample count is locked. Now we execute the core classical processing command."
   },
   {
     "id": 55,
     "type": "type-in",
     "context": "REAL WORLD SCENARIO: Genomic Data Generation\n\n| Step | Phase | Component | Status |\n|---|---|---|---|\n| 5 | Execution | Classical ExpVal | Pending |\n\nWe push all components into PennyLane's specialized classical IQP evaluator.",
-    "question": "Call qp.qnn.iqp.iqp_expval passing observables, params, gates, the integer 4, _samples, and key as arguments. Assign the result to two unpacked variables: exp_vals and std_err.",
-    "answer": "exp_vals, std_err = qp.qnn.iqp.iqp_expval(observables, params, gates, 4, _samples, key)",
+    "question": "Call qp.qnn.iqp.iqp_expval passing observables, params, gates, the integer 4, n_samples, and key as arguments. Assign the result to two unpacked variables: exp_vals and std_err.",
+    "answer": "exp_vals, std_err = qp.qnn.iqp.iqp_expval(observables, params, gates, 4, n_samples, key)",
     "explanation": "The classical evaluation is complete! To train the model, we calculate a loss metric to minimize."
   },
   {
