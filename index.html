@@ -6,6 +6,7 @@
     <title>Quantum Computing Resources Portal</title>
 
     <link rel="stylesheet" href="wiser_summer_program/css/pages.css">
+    <script src="assets/js/analytics.js" defer></script>
 </head>
 <body>
 
@@ -67,11 +68,38 @@
                 </div>
         </section>
 
-        
+        <div class="analytics-actions">
+            <button type="button"
+                    class="analytics-button"
+                    data-analytics-open>
+                View Analytics
+            </button>
+        </div>
 
     </div>
 </div>
 
+<dialog class="analytics-modal" id="analytics-modal" aria-labelledby="analytics-modal-title">
+    <h2 id="analytics-modal-title">Analytics</h2>
+    <p id="analytics-status">
+        Tracking status is loading.
+    </p>
+    <p>
+        GitHub Pages cannot safely read live GA4 report data directly in the browser because the Google Analytics Data API requires authenticated credentials. Keep service account keys, OAuth secrets, and private keys out of frontend code.
+    </p>
+    <ul>
+        <li>Page views, users, sessions, returning visitors, and page navigation are tracked by GA4 once the Measurement ID is configured.</li>
+        <li>Open Google Analytics to view live Realtime and standard reports.</li>
+        <li>Use a backend or serverless proxy if this site later needs embedded read-only report numbers.</li>
+    </ul>
+    <button type="button"
+            class="analytics-modal-close"
+            data-analytics-close>
+        Close
+    </button>
+</dialog>
+
+<script src="assets/js/analytics-modal.js" defer></script>
 </body>
 </html>
 

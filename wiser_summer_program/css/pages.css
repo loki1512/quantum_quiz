@@ -277,6 +277,63 @@ td a:hover {
   box-shadow: 0 0 10px rgba(0, 200, 255, 0.30);
 }
 
+.analytics-actions {
+  margin-top: 28px;
+}
+
+.analytics-button,
+.analytics-modal-close {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 1px solid var(--sf-accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sf-accent);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.analytics-button:hover,
+.analytics-modal-close:hover {
+  background: rgba(0, 200, 255, 0.10);
+  box-shadow: 0 0 10px rgba(0, 200, 255, 0.30);
+}
+
+.analytics-modal {
+  width: min(620px, calc(100vw - 32px));
+  border: 1px solid var(--sf-border);
+  border-radius: 8px;
+  background: var(--sf-surface);
+  color: var(--sf-text);
+  padding: 28px;
+  margin: auto;
+}
+
+.analytics-modal::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.analytics-modal h2 {
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--sf-accent);
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.analytics-modal p {
+  margin-bottom: 18px;
+}
+
+.analytics-modal ul {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 24px;
+  color: var(--sf-text-muted);
+}
+
 .navigation-row {
   margin-top: 32px;
 }

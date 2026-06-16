@@ -28,6 +28,36 @@ qiskit_intro.html
 
 No build step is required. The app is plain HTML, CSS, and JavaScript.
 
+## Google Analytics 4
+
+GA4 tracking is loaded from `assets/js/analytics.js` on every HTML page. The only configuration value is the `MEASUREMENT_ID` constant near the top of that file.
+
+To enable tracking, replace:
+
+```js
+const MEASUREMENT_ID = 'G-XXXXXXXXXX';
+```
+
+with your GA4 web stream Measurement ID, for example:
+
+```js
+const MEASUREMENT_ID = 'G-ABC1234567';
+```
+
+When the placeholder value is still present, the analytics script exits without loading Google scripts or sending events. After a real Measurement ID is configured, GA4 receives normal page views for each loaded page. GA4 uses those page-view signals to report users, sessions, returning visitors, and navigation between pages. The site also sends an `internal_navigation` event when a visitor clicks an internal link.
+
+The main `index.html` page includes a **View Analytics** button. It opens a local informational modal and does not query Google Analytics directly. This is intentional: GitHub Pages is a static frontend host, and the GA4 Data API requires authenticated credentials. Service account credentials, OAuth secrets, API secrets, and private keys must never be placed in frontend HTML or JavaScript.
+
+To embed live analytics numbers in the modal later, add a small read-only backend or serverless endpoint that keeps credentials server-side and returns only the metrics the page is allowed to display. The frontend modal can then call that endpoint without exposing secrets.
+
+Testing analytics locally:
+
+1. Replace the placeholder Measurement ID in `assets/js/analytics.js`.
+2. Open `index.html` through a local server or the deployed GitHub Pages URL.
+3. Confirm the browser Network tab loads `https://www.googletagmanager.com/gtag/js`.
+4. Click between pages and verify page views plus `internal_navigation` events in GA4 Realtime or DebugView.
+5. Restore the placeholder ID if you do not want local testing traffic sent to GA4.
+
 ## Pedagogy
 
 The quiz is built as a guided spiral, not a random question bank. Each question prepares the next one.
